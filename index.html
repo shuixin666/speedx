@@ -386,7 +386,7 @@
   .post-solve-actions{
     display:none;
     position:absolute;
-    top:calc(100% + 8px);
+    top:calc(100% + 12px);
     left:50%;
     transform:translateX(-50%);
     align-items:center;
@@ -398,7 +398,10 @@
     box-shadow:0 6px 20px rgba(0,0,0,.12);
     z-index:4;
     white-space:nowrap;
+    touch-action:manipulation;
   }
+  /* 刚出现的一小段时间不接收触摸：结束计时的那一下和紧随其后的手指不会误触 */
+  .post-solve-actions.settling{ pointer-events:none; }
   .post-act{
     min-width:50px; height:32px;
     padding:0 10px;
@@ -408,6 +411,9 @@
     color:var(--txt);
     font-family:inherit; font-size:12.5px; font-weight:700;
     cursor:pointer;
+    touch-action:manipulation;
+    -webkit-user-select:none; user-select:none;
+    -webkit-tap-highlight-color:transparent;
     transition:background .15s, border-color .15s, color .15s, transform .15s;
   }
   .post-act:active{ transform:scale(.96); }
@@ -2595,6 +2601,9 @@
   var settingsOpen = false;
   var moreOpen = false;
   var postActionsShown = false;
+  var postActionsSettleTimer = 0;  // 快捷编辑栏出现后的防误触冷却
+  var postActPress = null;         // 快捷编辑栏上最近一次按压的信息
+  var postActHoldTimer = 0;        // 长按编辑栏 = 开始下一次计时
   var confirmOpen  = false;
   var pendingDeleteIndex = null;
 
@@ -2697,18 +2706,97 @@
     postActDnf.classList.toggle('active', s.penalty === 2);
   }
 
+  var POST_ACT_SETTLE_MS = 320;    // 出现后的冷却时间（不接收触摸）
+  var POST_ACT_HOLD_MS = 280;      // 按住超过这个时长视为“开始下一次计时”
+
+  function clearPostActHold() {
+    if (postActHoldTimer) {
+      clearTimeout(postActHoldTimer);
+      postActHoldTimer = 0;
+    }
+  }
+
   function showPostSolveActions() {
     if (!isTouchPrimary || !solves.length) return;
     postActionsShown = true;
-    postSolveActions.classList.add('show');
+    // 刚出现时先进入 settling：即使手指还停在屏幕上，也不会点中 +2 / DNF / 删除
+    postSolveActions.classList.add('show', 'settling');
+    clearTimeout(postActionsSettleTimer);
+    postActionsSettleTimer = setTimeout(function () {
+      postActionsSettleTimer = 0;
+      postSolveActions.classList.remove('settling');
+    }, POST_ACT_SETTLE_MS);
     updatePostSolveActionsState();
   }
 
   function hidePostSolveActions() {
     if (!postActionsShown) return;
     postActionsShown = false;
-    postSolveActions.classList.remove('show');
+    clearTimeout(postActionsSettleTimer);
+    postActionsSettleTimer = 0;
+    clearPostActHold();
+    postSolveActions.classList.remove('show', 'settling');
   }
+
+  // 只有“从同一个按钮上按下并抬起”的短按才算有效，避免停止计时时按钮正好出现在手指下
+  function postActTapAllowed(btn) {
+    var p = postActPress;
+    if (!p) return true;                 // 键盘 / 辅助技术触发
+    if (performance.now() - p.t > 1200) return true; // 太久远的按压，视为键盘操作
+    return p.btn === btn && !p.moved && !p.held;
+  }
+
+  function syncPostActPress(e) {
+    var t = e.target;
+    var bar = (t && t.closest) ? t.closest('#postSolveActions') : null;
+    var btn = bar ? t.closest('.post-act') : null;
+    clearPostActHold();
+    postActPress = {
+      id: e.pointerId,
+      btn: btn,
+      x: e.clientX,
+      y: e.clientY,
+      t: performance.now(),
+      moved: false,
+      held: false
+    };
+    var pressInfo = postActPress;
+    if (bar && e.isPrimary && e.pointerType !== 'mouse' && isTouchPrimary && activePointerId === null) {
+      // 长按编辑栏不触发成绩修改，而是交给计时区域开始下一次计时
+      postActHoldTimer = setTimeout(function () {
+        postActHoldTimer = 0;
+        if (postActPress !== pressInfo || pressInfo.moved || pressInfo.held) return;
+        pressInfo.held = true;
+        hidePostSolveActions();
+        activePointerId = e.pointerId;
+        try { areaEl.setPointerCapture(e.pointerId); } catch (err) {}
+        press();
+        // 已经在编辑栏上按了足够久，直接进入可开始状态，抬起即开始计时
+        if (state === 'holding') {
+          clearHoldUI();
+          state = 'ready';
+          areaEl.classList.add('ready');
+          vibrate(10);
+        }
+      }, POST_ACT_HOLD_MS);
+    }
+  }
+
+  document.addEventListener('pointerdown', syncPostActPress, true);
+  document.addEventListener('pointermove', function (e) {
+    var p = postActPress;
+    if (!p || e.pointerId !== p.id || p.moved) return;
+    if (Math.abs(e.clientX - p.x) > 14 || Math.abs(e.clientY - p.y) > 14) {
+      p.moved = true;
+      clearPostActHold();
+    }
+  }, true);
+  document.addEventListener('pointerup', function (e) {
+    if (postActPress && e.pointerId === postActPress.id) clearPostActHold();
+  }, true);
+  document.addEventListener('pointercancel', function (e) {
+    if (postActPress && e.pointerId === postActPress.id) clearPostActHold();
+  }, true);
 
   function blurActive() {
     try {
@@ -4816,7 +4904,8 @@
   });
 
   /* 计时结束后的快捷成绩编辑 */
-  postActP2.addEventListener('click', function () {
+  postActP2.addEventListener('click', function (e) {
+    if (!postActTapAllowed(this)) { e.preventDefault(); return; }
     var s = solves[0];
     if (!s) return;
     s.penalty = (s.penalty === 1) ? 0 : 1;
@@ -4828,7 +4917,8 @@
     this.blur();
   });
 
-  postActDnf.addEventListener('click', function () {
+  postActDnf.addEventListener('click', function (e) {
+    if (!postActTapAllowed(this)) { e.preventDefault(); return; }
     var s = solves[0];
     if (!s) return;
     s.penalty = (s.penalty === 2) ? 0 : 2;
@@ -4840,7 +4930,8 @@
     this.blur();
   });
 
-  postActDel.addEventListener('click', function () {
+  postActDel.addEventListener('click', function (e) {
+    if (!postActTapAllowed(this)) { e.preventDefault(); return; }
     if (!solves.length) return;
     openDeleteConfirm(0);
     this.blur();
