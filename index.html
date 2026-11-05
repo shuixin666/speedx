@@ -1,0 +1,5065 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light" data-font="mono">
+<head>
+<meta charset="utf-8">
+<!-- 安全策略：禁止加载任何外部脚本/样式/网络资源，只允许本页面的行内代码 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; child-src 'none'; worker-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover,interactive-widget=resizes-content">
+<meta name="theme-color" content="#f2f2f7">
+<title>魔方计时器 · Cube Timer</title>
+<style>
+  /* 内置等宽字体：桌面与手机使用同一字体，避免手机端回退到系统 monospace 造成差异
+     Roboto Mono · SIL Open Font License 1.1 · 见 assets/OFL-RobotoMono.txt */
+  @font-face{
+    font-family:"CubeTimer Mono";
+    src:url("assets/roboto-mono-latin.woff2") format("woff2");
+    font-weight:100 700;
+    font-style:normal;
+    font-display:swap;
+  }
+
+  :root{
+    --bg:#08080a;
+    --mono-font:"CubeTimer Mono",ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono","Courier New",monospace;
+    --panel:rgba(14,14,18,.72);
+    --line:rgba(255,255,255,.07);
+    --line-strong:rgba(255,255,255,.1);
+    --txt:#f2f2f5;
+    --dim:#71717a;
+    --dim2:#52525b;
+    --red:#ff4d5e;
+    --green:#2ee58a;
+    --blue:#5b8cff;
+
+    --glow-a:rgba(91,140,255,.12);
+    --glow-b:rgba(255,77,94,.06);
+    --area-glow:rgba(91,140,255,.05);
+
+    --scramble-color:#f5f5f7;
+    --timer-color:#f5f5f7;
+    --timer-shadow:0 0 60px rgba(91,140,255,.16);
+
+    --card-bg:rgba(255,255,255,.035);
+    --card-bg-hover:rgba(255,255,255,.05);
+    --card-border:rgba(255,255,255,.07);
+
+    --icon-bg:rgba(255,255,255,.04);
+    --icon-border:rgba(255,255,255,.1);
+    --icon-color:#a1a1aa;
+
+    --stat-label:#52525b;
+    --stat-value:#e4e4e7;
+    --stat-divider:rgba(255,255,255,.07);
+    --stats-border:rgba(255,255,255,.05);
+
+    --solve-border:rgba(255,255,255,.02);
+    --solve-hover:rgba(255,255,255,.03);
+
+    --sheet-bg:#111115;
+    --sheet-border:rgba(255,255,255,.08);
+    --sheet-tab-color:#71717a;
+    --sheet-tab-active-bg:rgba(91,140,255,.14);
+    --sheet-tab-active-border:rgba(91,140,255,.4);
+    --sheet-tab-active-color:#8fb0ff;
+
+    --setting-title:#e8e8ec;
+    --setting-desc:#52525b;
+    --setting-border:rgba(255,255,255,.04);
+
+    --switch-bg:#2a2a32;
+
+    --seg-bg:rgba(255,255,255,.04);
+    --seg-border:rgba(255,255,255,.07);
+    --seg-btn-color:#a1a1aa;
+    --seg-btn-hover:#e4e4e7;
+    --seg-btn-active-bg:rgba(91,140,255,.2);
+    --seg-btn-active-color:#8fb0ff;
+
+    --confirm-bg:#17171c;
+    --confirm-border:rgba(255,255,255,.1);
+    --confirm-title:#f2f2f5;
+    --confirm-desc:#71717a;
+    --confirm-desc-strong:#e4e4e7;
+
+    --btn-cancel-bg:rgba(255,255,255,.05);
+    --btn-cancel-border:rgba(255,255,255,.12);
+    --btn-cancel-color:#c9c9d1;
+    --btn-cancel-hover:rgba(255,255,255,.1);
+
+    --toast-bg:rgba(30,30,38,.96);
+    --toast-border:rgba(255,255,255,.1);
+    --toast-color:#e4e4e7;
+
+    --overlay-bg:rgba(0,0,0,.55);
+    --overlay-bg-strong:rgba(0,0,0,.62);
+
+    --hint-color:#71717a;
+    --scrollbar-thumb:#2e2e36;
+    
+    --square-bg: #111115;
+    --square-shadow: 0 8px 30px rgba(0,0,0,.4);
+
+    --btn-primary-bg: rgba(91,140,255,.2);
+    --btn-primary-border: rgba(91,140,255,.4);
+    --btn-primary-color: #8fb0ff;
+    
+    --cube-bg: rgba(0,0,0,0.2);
+    --cube-cell-border: rgba(255,255,255,.8);
+
+    /* 尺寸控制变量 */
+    --scramble-font-size: 21px;
+    --cube-cell-size: 16px;
+    --cube-gap: 2px;
+  }
+
+  [data-theme="light"]{
+    --bg:#f2f2f7;
+    --panel:rgba(255,255,255,.85);
+    --line:rgba(0,0,0,.08);
+    --line-strong:rgba(0,0,0,.1);
+    --txt:#1c1c1e;
+    --dim:#6e6e76;
+    --dim2:#9a9aa2;
+    --red:#e02b3c;
+    --green:#14a862;
+    --blue:#2f6bff;
+
+    --glow-a:rgba(47,107,255,.09);
+    --glow-b:rgba(224,43,60,.04);
+    --area-glow:rgba(47,107,255,.05);
+
+    --scramble-color:#1c1c1e;
+    --timer-color:#1c1c1e;
+    --timer-shadow:0 0 60px rgba(47,107,255,.12);
+
+    --card-bg:rgba(0,0,0,.03);
+    --card-bg-hover:rgba(0,0,0,.05);
+    --card-border:rgba(0,0,0,.08);
+
+    --icon-bg:rgba(0,0,0,.03);
+    --icon-border:rgba(0,0,0,.08);
+    --icon-color:#55555c;
+
+    --stat-label:#9a9aa2;
+    --stat-value:#1c1c1e;
+    --stat-divider:rgba(0,0,0,.08);
+    --stats-border:rgba(0,0,0,.06);
+
+    --solve-border:rgba(0,0,0,.05);
+    --solve-hover:rgba(0,0,0,.03);
+
+    --sheet-bg:#ffffff;
+    --sheet-border:rgba(0,0,0,.08);
+    --sheet-tab-color:#6e6e76;
+    --sheet-tab-active-bg:rgba(47,107,255,.1);
+    --sheet-tab-active-border:rgba(47,107,255,.35);
+    --sheet-tab-active-color:#2f6bff;
+
+    --setting-title:#1c1c1e;
+    --setting-desc:#9a9aa2;
+    --setting-border:rgba(0,0,0,.05);
+
+    --switch-bg:#d1d1d6;
+
+    --seg-bg:rgba(0,0,0,.04);
+    --seg-border:rgba(0,0,0,.07);
+    --seg-btn-color:#6e6e76;
+    --seg-btn-hover:#1c1c1e;
+    --seg-btn-active-bg:rgba(47,107,255,.12);
+    --seg-btn-active-color:#2f6bff;
+
+    --confirm-bg:#ffffff;
+    --confirm-border:rgba(0,0,0,.1);
+    --confirm-title:#1c1c1e;
+    --confirm-desc:#6e6e76;
+    --confirm-desc-strong:#1c1c1e;
+
+    --btn-cancel-bg:rgba(0,0,0,.04);
+    --btn-cancel-border:rgba(0,0,0,.1);
+    --btn-cancel-color:#55555c;
+    --btn-cancel-hover:rgba(0,0,0,.08);
+
+    --toast-bg:rgba(28,28,30,.95);
+    --toast-border:rgba(255,255,255,.1);
+    --toast-color:#f2f2f5;
+
+    --overlay-bg:rgba(0,0,0,.35);
+    --overlay-bg-strong:rgba(0,0,0,.45);
+
+    --hint-color:#6e6e76;
+    --scrollbar-thumb:#d1d1d6;
+    
+    --square-bg: #ffffff;
+    --square-shadow: 0 8px 30px rgba(0,0,0,.08);
+
+    --btn-primary-bg: rgba(47,107,255,.1);
+    --btn-primary-border: rgba(47,107,255,.3);
+    --btn-primary-color: #2f6bff;
+    
+    --cube-bg: rgba(0,0,0,0.05);
+    /* 日间模式白底卡片：用深色描边勾勒每个方格，保证白色块也能看清 */
+    --cube-cell-border: rgba(0,0,0,.6);
+  }
+
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; margin:0; padding:0; }
+  body{
+    background:var(--bg);
+    color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    overflow:hidden;
+    -webkit-user-select:none; user-select:none;
+    overscroll-behavior:none;
+    transition:background-color .25s ease, color .25s ease;
+  }
+  body::before{
+    content:'';
+    position:fixed; inset:0;
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -12%, var(--glow-a), transparent 60%),
+      radial-gradient(ellipse 55% 40% at 90% 105%, var(--glow-b), transparent 60%);
+    pointer-events:none;
+    z-index:0;
+    transition:background .3s ease;
+  }
+
+  .app{
+    position:fixed; inset:0;
+    display:flex; flex-direction:column;
+    z-index:1;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  header{
+    flex:0 0 auto;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:12px; padding:12px 20px;
+    transition: opacity .3s ease, visibility .3s;
+  }
+  .brand{
+    display:flex; align-items:center; gap:9px;
+    min-width:0;
+    color:var(--txt);
+  }
+  /* 单色 LOGO：黑色线条图标，深色主题下反色为白色 */
+  .brand-mark{
+    width:44px; height:44px;
+    flex:0 0 auto;
+  }
+  .brand-logo{
+    display:block;
+    object-fit:contain;
+    filter:none;
+    transition:filter .25s ease;
+    -webkit-user-drag:none;
+  }
+  [data-theme="dark"] .brand-logo{ filter:invert(1); }
+  .brand-name{
+    font-family:inherit;
+    font-size:21px;
+    font-weight:800;
+    letter-spacing:-.01em;
+    line-height:1;
+    color:var(--txt);
+    white-space:nowrap;
+  }
+  .brand-name-x{ font-weight:900; }
+  .left-tools{
+    display:flex; align-items:center; gap:8px;
+    width:100%;
+  }
+  .left-tools .group-btn,
+  .left-tools .puzzle-btn{
+    flex:1 1 0; width:auto; max-width:none; min-width:0;
+    height:34px; padding:0 10px;
+    justify-content:center;
+  }
+  .left-tools .group-btn svg,
+  .left-tools .puzzle-btn svg{ width:16px; height:16px; }
+  .group-btn{
+    display:inline-flex; align-items:center; gap:6px;
+    max-width:200px;
+    padding:5px 10px; border-radius:9px;
+    border:1px solid var(--icon-border);
+    background:var(--icon-bg);
+    color:var(--icon-color);
+    font-family:inherit; font-size:12px; font-weight:600;
+    cursor:pointer; transition:all .18s;
+  }
+  .group-btn:hover{ color:var(--txt); background:var(--card-bg-hover); }
+  .group-btn:active{ transform:scale(.97); }
+  .group-btn svg{ width:14px; height:14px; flex:0 0 auto; }
+  .group-btn-name{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .logo{
+    width:17px; height:17px; border-radius:5px;
+    background:conic-gradient(from 45deg,#ff453a,#ff9f0a,#ffd60a,#30d158,#0a84ff,#bf5af2,#ff453a);
+    opacity:.85;
+  }
+  .tools{ display:flex; gap:8px; flex:0 0 auto; }
+  .icon-btn{
+    width:38px; height:38px; border-radius:11px;
+    border:1px solid var(--icon-border);
+    background:var(--icon-bg);
+    color:var(--icon-color); cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:all .18s;
+  }
+  .icon-btn:hover{ color:var(--txt); background:var(--card-bg-hover); }
+  .icon-btn:active{ transform:scale(.93); }
+  .icon-btn svg{ width:18px; height:18px; }
+  .puzzle-btn{
+    width:auto; padding:0 12px; gap:7px;
+    font-family:inherit; font-size:12.5px; font-weight:700; letter-spacing:.02em;
+  }
+
+  .timer-area{
+    flex:1 1 auto; min-height:0;
+    display:flex; flex-direction:column; align-items:center;
+    padding:8px 20px 280px;
+    position:relative; cursor:pointer;
+    touch-action:none; overflow:hidden;
+  }
+  
+  .timer-area::before{
+    content:'';
+    position:absolute; inset:0;
+    background:radial-gradient(ellipse 50% 40% at 50% 50%, var(--area-glow), transparent 70%);
+    transition:background .18s;
+    pointer-events:none;
+  }
+
+  .scramble-wrap{
+    position:relative; z-index:2;
+    flex:0 0 auto;
+    display:flex; align-items:center; gap:10px;
+    width:100%; max-width:900px;
+    padding:12px 14px;
+    background:var(--card-bg);
+    border:1px solid var(--card-border);
+    border-radius:14px;
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    transition:background .25s, border-color .25s, opacity .3s;
+  }
+  .scramble{
+    flex:1 1 auto; min-width:0;
+    font-family:var(--mono-font);
+    font-size:var(--scramble-font-size);
+    line-height:1.65;
+    letter-spacing:.02em;
+    word-spacing:.14em;
+    color:var(--scramble-color);
+    cursor:pointer;
+    user-select:text; -webkit-user-select:text;
+    transition:color .25s, font-size .2s;
+  }
+  .scramble i{ font-style:normal; }
+
+  .scramble-refresh{
+    flex:0 0 auto;
+    width:30px; height:30px; border-radius:9px;
+    border:1px solid var(--icon-border);
+    background:var(--icon-bg);
+    color:var(--icon-color); cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:all .18s;
+  }
+  .scramble-refresh:hover{ color:var(--txt); background:var(--card-bg-hover); }
+  .scramble-refresh:active{ transform:scale(.9); }
+  .scramble-refresh svg{ width:15px; height:15px; }
+
+  .timer-center{
+    position:relative; z-index:2;
+    flex:1 1 auto; min-height:0;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    gap:8px; width:100%;
+    transform: translateY(20px);
+  }
+  .timer-stack{
+    position:relative;
+    display:flex; flex-direction:column;
+    align-items:center; gap:8px;
+  }
+  /* 手机端计时结束后的快捷编辑；绝对定位，不改变计时数字的位置 */
+  .post-solve-actions{
+    display:none;
+    position:absolute;
+    top:calc(100% + 8px);
+    left:50%;
+    transform:translateX(-50%);
+    align-items:center;
+    gap:4px;
+    padding:4px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    background:var(--sheet-bg);
+    box-shadow:0 6px 20px rgba(0,0,0,.12);
+    z-index:4;
+    white-space:nowrap;
+  }
+  .post-act{
+    min-width:50px; height:32px;
+    padding:0 10px;
+    border-radius:8px;
+    border:1px solid var(--icon-border);
+    background:var(--icon-bg);
+    color:var(--txt);
+    font-family:inherit; font-size:12.5px; font-weight:700;
+    cursor:pointer;
+    transition:background .15s, border-color .15s, color .15s, transform .15s;
+  }
+  .post-act:active{ transform:scale(.96); }
+  .post-act.p2.active{
+    color:var(--blue);
+    border-color:var(--btn-primary-border);
+    background:var(--btn-primary-bg);
+  }
+  .post-act.dnf.active{
+    color:var(--red);
+    border-color:rgba(224,43,60,.5);
+    background:rgba(224,43,60,.14);
+  }
+  .post-act.del{ color:var(--red); }
+  #timer{
+    font-family:var(--mono-font);
+    font-weight:300;
+    font-size:clamp(54px, min(24vw, 25vh), 180px);
+    line-height:1; letter-spacing:-.04em;
+    font-variant-numeric:tabular-nums;
+    white-space:nowrap;
+    color:var(--timer-color);
+    text-shadow:var(--timer-shadow);
+    transition:color .25s, text-shadow .25s, font-size .15s;
+    padding:0 10px;
+  }
+  #timer.small{ font-size:clamp(40px, min(18vw, 20vh), 140px); }
+  #timer.warn{ color:var(--red); text-shadow:0 0 60px rgba(255,77,94,.35); }
+  .timer-area.holding #timer{ color:var(--red); text-shadow:0 0 70px rgba(255,77,94,.45); }
+  .timer-area.ready #timer{ color:var(--green); text-shadow:0 0 70px rgba(46,229,138,.45); }
+
+  [data-font="mono"] #timer{
+    font-family:var(--mono-font);
+    font-weight:300;
+    letter-spacing:-.04em;
+  }
+  [data-font="sans"] #timer{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    font-weight:200;
+    letter-spacing:-.05em;
+  }
+  [data-font="serif"] #timer{
+    font-family:Georgia,"Times New Roman","Songti SC","Noto Serif SC",serif;
+    font-weight:400;
+    letter-spacing:-.02em;
+  }
+  [data-font="rounded"] #timer{
+    font-family:"SF Pro Rounded","Nunito","Varela Round","Quicksand",system-ui,sans-serif;
+    font-weight:300;
+    letter-spacing:-.03em;
+  }
+
+  .hint{
+    height:20px;
+    font-size:13px; letter-spacing:.08em;
+    color:var(--hint-color);
+    font-variant-numeric:tabular-nums;
+    transition:color .15s, opacity .3s;
+    text-align:center; padding:0 12px;
+  }
+
+  /* ================= 底部面板容器 ================= */
+  /* 桌面端是覆盖在页面上的两角浮层；手机端在媒体查询里变成页面底部的信息栏 */
+  .bottom-dock {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    pointer-events: none;
+    transition: opacity .3s ease, visibility .3s;
+  }
+
+  /* 手机端“更多”抽屉：桌面端完全展开为普通流，保持原有三张卡片 */
+  .more-trigger,
+  .more-sheet-head,
+  .more-actions { display: none; }
+  .more-sheet-overlay,
+  .more-sheet { display: contents; }
+
+  .bottom-left-container {
+    position: fixed;
+    left: 16px;
+    bottom: 16px;
+    width: 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 100;
+    pointer-events: auto;
+    transition: opacity .3s ease, visibility .3s;
+  }
+
+  .bottom-right-container {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 100;
+    pointer-events: auto;
+    transition: opacity .3s ease, visibility .3s;
+  }
+
+  .stats-square {
+    width: 260px;
+    background: var(--square-bg);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--square-shadow);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: background .25s ease, box-shadow .25s ease;
+  }
+
+  /* 打乱图案卡片（防溢出） */
+  .cube-preview-square {
+    width: 280px;
+    height: 280px;
+    background: var(--square-bg);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--square-shadow);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: background .25s ease, box-shadow .25s ease;
+    overflow: hidden;
+  }
+
+  .stats-title {
+    flex: 0 0 auto;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--dim);
+    letter-spacing: 0.05em;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--solve-border);
+    background: rgba(0,0,0,0.1);
+    border-top-left-radius: 11px;
+    border-top-right-radius: 11px;
+  }
+
+  .stats-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 14px;
+  }
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    cursor: pointer;
+    transition: opacity .15s;
+  }
+  .stat-item:hover {
+    opacity: 0.8;
+  }
+  .stats-avg {
+    display: flex; justify-content: center;
+    padding: 8px 14px 0;
+  }
+  .stat-item.static { cursor: default; }
+  .stat-item.static:hover { opacity: 1; }
+  .stat-item span {
+    font-size: 10px;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .stat-item b {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--txt);
+    font-family: var(--mono-font);
+    transition: color .25s ease;
+  }
+
+  /* 成绩记录卡片 */
+  .solves-square {
+    width: 260px;
+    height: 260px;
+    background: var(--square-bg);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: var(--square-shadow);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: background .25s ease, box-shadow .25s ease;
+  }
+
+  .solves-header {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--solve-border);
+    background: rgba(0,0,0,0.1);
+  }
+
+  .solves-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--dim);
+    letter-spacing: 0.05em;
+  }
+
+  .solves-header .clear-btn {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    color: var(--dim);
+    cursor: pointer;
+    transition: color .15s;
+  }
+  .solves-header .clear-btn:hover {
+    color: var(--red);
+  }
+
+  .solves-list {
+    list-style: none; margin: 0; padding: 0;
+    flex: 1 1 auto; min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+  .solves-list::-webkit-scrollbar{ width: 4px; }
+  .solves-list::-webkit-scrollbar-thumb{ background: var(--scrollbar-thumb); border-radius: 2px; }
+
+  .solve {
+    display: flex; align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--solve-border);
+    font-variant-numeric: tabular-nums;
+    transition: background .12s;
+    cursor: pointer;
+  }
+  .solve:hover { background: var(--solve-hover); }
+
+  .solve .idx {
+    flex: 0 0 34px;
+    color: var(--dim);
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .solve .time {
+    flex: 1 1 auto;
+    color: var(--txt);
+    font-size: 16px;
+    font-weight: 700;
+    font-family: var(--mono-font);
+    white-space: nowrap;
+    transition: color .25s ease;
+  }
+  .penalty-plus {
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .solve.dnf .time {
+    color: var(--red);
+    opacity: 0.8;
+  }
+  .solve.dnf .time .raw-t {
+    color: var(--dim);
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-block;
+  }
+  
+  /* PB 标红 */
+  .solve.pb .time {
+    color: var(--red) !important;
+    text-shadow: 0 0 10px rgba(255,77,94,0.3);
+  }
+
+  .solve-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex: 0 0 auto;
+  }
+  .act-btn {
+    background: transparent;
+    border: none;
+    color: var(--dim);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 0;
+    cursor: pointer;
+    transition: color .15s;
+  }
+  .act-btn:hover { color: var(--txt); }
+  .act-btn.p2.active { color: var(--blue); }
+  .act-btn.dnf.active { color: var(--red); }
+  .act-btn.del { font-size: 18px; font-weight: 300; line-height: 1; margin-left: 2px; }
+
+  .empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100%;
+    box-sizing: border-box;
+    padding: 16px;
+    text-align: center;
+    font-size: 12px; color: var(--dim); line-height: 1.6;
+  }
+  .empty-title { display: block; }
+  .empty-sub {
+    display: block;
+    margin-top: 3px;
+    font-size: 11px;
+    color: var(--dim2);
+  }
+
+  /* ================= 2D 展开图 ================= */
+  .cube-2d-wrap {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: repeat(4, max-content);
+    grid-template-rows: repeat(3, max-content);
+    justify-content: center;
+    align-content: center; 
+    gap: calc(var(--cube-gap) * 2);
+    padding: 10px;
+    box-sizing: border-box;
+  }
+
+  .cube-face {
+    display: grid;
+    grid-template-columns: repeat(3, max-content);
+    grid-template-rows: repeat(3, max-content);
+    gap: var(--cube-gap);
+  }
+
+  /* 精确布局：U居中，L-F-R-B一行，D居中 */
+  .face-U { grid-area: 1 / 2 / 2 / 3; }
+  .face-L { grid-area: 2 / 1 / 3 / 2; }
+  .face-F { grid-area: 2 / 2 / 3 / 3; }
+  .face-R { grid-area: 2 / 3 / 3 / 4; }
+  .face-B { grid-area: 2 / 4 / 3 / 5; }
+  .face-D { grid-area: 3 / 2 / 4 / 3; }
+
+  .cube-cell {
+    box-sizing: border-box;
+    width: var(--cube-cell-size);
+    height: var(--cube-cell-size);
+    border-radius: calc(var(--cube-cell-size) * 0.18);
+    border: 1px solid var(--cube-cell-border);
+    transition: width .2s, height .2s;
+  }
+
+  /* 标准魔方配色 */
+  .cell-w { background: #f7f7f7; }
+  .cell-y { background: #ffd500; }
+  .cell-g { background: #00a651; }
+  .cell-b { background: #0051ba; }
+  .cell-r { background: #e53935; }
+  .cell-o { background: #ff5800; }
+
+  /* 日间模式白块对比度优化 */
+
+  /* ================= 计时隐藏所有元素 ================= */
+  body.hide-all header,
+  body.hide-all .scramble-wrap,
+  body.hide-all .bottom-dock,
+  body.hide-all .bottom-left-container,
+  body.hide-all .bottom-right-container,
+  body.hide-all .hint {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* ================= 手机端适配 ================= */
+  @media (max-width: 768px), (hover: none) and (pointer: coarse) {
+    header { padding: 10px 14px 6px; }
+    .brand { gap: 7px; }
+    .brand-mark { width: 36px; height: 36px; }
+    .brand-name { font-size: 18px; }
+    .icon-btn { width: 42px; height: 42px; border-radius: 12px; }
+
+    .timer-area {
+      padding: 2px 12px 6px;
+      cursor: default;
+    }
+    /* 手机端保持和桌面一致：计时过程中元素只是淡出，不改变布局，计时数字位置不跳动 */
+    .scramble-wrap {
+      max-width: none;
+      padding: 10px 12px;
+      gap: 8px;
+      border-radius: 14px;
+    }
+    .scramble {
+      line-height: 1.5;
+      letter-spacing: 0;
+      word-spacing: .08em;
+    }
+    .scramble-refresh { width: 40px; height: 40px; border-radius: 11px; }
+    .scramble-refresh svg { width: 17px; height: 17px; }
+
+    .timer-center { transform: none; gap: 4px; }
+    .timer-stack { gap: 4px; }
+    .post-solve-actions.show { display: flex; }
+    .post-act { min-width: 54px; height: 34px; font-size: 13px; }
+    /* 下滑删除 / 上划换打乱时，让计时区域跟随手指移动并给出提示 */
+    .timer-area.swiping .timer-center {
+      transform: translateY(var(--swipe-offset, 0px));
+    }
+    /* 滑动时强制显示提示（平时 hide-all 会隐藏） */
+    .timer-area.swiping .hint {
+      display: block;
+      opacity: 1;
+      height: auto;
+      white-space: nowrap;
+    }
+    #timer {
+      font-size: clamp(58px, min(30vw, 26vh), 190px);
+      padding: 0 6px;
+    }
+    #timer.small { font-size: clamp(42px, min(20vw, 18vh), 132px); }
+    .hint { height: 18px; font-size: 12px; letter-spacing: .04em; }
+
+    /* 底部：左下成绩统计 + 右下打乱图案，上方小图标打开“更多”抽屉 */
+    .bottom-dock {
+      position: relative;
+      inset: auto;
+      flex: 0 0 auto;
+      width: 100%;
+      height: auto;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: auto auto;
+      align-items: start;
+      gap: 8px 10px;
+      padding: 0 10px 8px;
+      pointer-events: auto;
+    }
+    .bottom-left-container,
+    .bottom-right-container {
+      position: static;
+      inset: auto;
+      width: auto;
+      display: contents;
+      pointer-events: auto;
+    }
+
+    /* 原来的分组/类型按钮移入“更多”抽屉 */
+    .left-tools { display: none; }
+
+    .more-trigger {
+      display: flex;
+      grid-column: 1;
+      grid-row: 1;
+      justify-self: start;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      border-radius: 12px;
+      flex: 0 0 auto;
+    }
+    .more-trigger svg { width: 18px; height: 18px; }
+
+    .stats-square,
+    .solves-square,
+    .cube-preview-square {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+
+    /* 左下：大号成绩统计方块 */
+    .stats-square {
+      grid-column: 1;
+      grid-row: 2;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1 / 1;
+      display: grid;
+      grid-template-rows: auto repeat(5, minmax(0, 1fr));
+      align-items: stretch;
+      padding: 0;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .stats-square .stats-title {
+      display: flex;
+      align-items: center;
+      height: 28px;
+      padding: 0 12px;
+      border-bottom: 1px solid var(--solve-border);
+      border-top-left-radius: 16px;
+      border-top-right-radius: 16px;
+      background: rgba(0, 0, 0, .1);
+      font-size: 10.5px;
+      letter-spacing: .03em;
+    }
+    .stats-avg, .stats-row { display: contents; }
+    .stat-item {
+      min-width: 0;
+      min-height: 0;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      padding: 0 12px;
+      border-left: none;
+      border-top: 1px solid var(--solve-border);
+      border-radius: 0;
+    }
+    .stat-item span {
+      max-width: 58%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 10px;
+      letter-spacing: 0;
+      text-align: left;
+    }
+    .stat-item b { font-size: 13px; }
+    .stat-item:not(.static):active { background: var(--card-bg-hover); }
+
+    /* 右下：打乱图案 */
+    .cube-preview-square {
+      grid-column: 2;
+      grid-row: 2;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1 / 1;
+      border-radius: 16px;
+    }
+    .cube-preview-square .stats-title {
+      display: flex;
+      align-items: center;
+      height: 28px;
+      padding: 0 12px;
+      font-size: 10.5px;
+      letter-spacing: .03em;
+    }
+    .cube-2d-wrap { padding: 4px 5px 6px; }
+
+    /* “更多”抽屉：上排分组/类型，下面是成绩记录 */
+    .more-sheet-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 260;
+      display: flex;
+      align-items: flex-end;
+      background: var(--overlay-bg);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .22s;
+    }
+    .more-sheet-overlay.show { opacity: 1; pointer-events: auto; }
+    .more-sheet {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: min(74vh, 640px);
+      padding: 6px 12px calc(12px + env(safe-area-inset-bottom));
+      background: var(--sheet-bg);
+      border-top: 1px solid var(--sheet-border);
+      border-radius: 20px 20px 0 0;
+      box-shadow: var(--square-shadow);
+      transform: translateY(100%);
+      transition: transform .28s cubic-bezier(.4,0,.2,1);
+    }
+    .more-sheet-overlay.show .more-sheet { transform: translateY(0); }
+    .more-sheet-head {
+      position: relative;
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 22px;
+    }
+    .more-handle {
+      width: 36px;
+      height: 4px;
+      border-radius: 999px;
+      background: var(--line-strong);
+    }
+    .more-close {
+      position: absolute;
+      right: 0;
+      top: -4px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: transparent;
+      color: var(--dim);
+      font-size: 22px;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .more-actions {
+      display: flex;
+      flex: 0 0 auto;
+      gap: 8px;
+      margin: 0 0 10px;
+    }
+    .more-act {
+      flex: 1 1 0;
+      min-width: 0;
+      height: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border-radius: 12px;
+      border: 1px solid var(--icon-border);
+      background: var(--icon-bg);
+      color: var(--txt);
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .15s, transform .15s;
+    }
+    .more-act:active { transform: scale(.98); background: var(--card-bg-hover); }
+    .more-act svg { width: 16px; height: 16px; flex: 0 0 auto; }
+    .more-act-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .more-sheet .solves-square {
+      flex: 1 1 auto;
+      width: 100%;
+      height: auto;
+      min-height: 0;
+      border-radius: 14px;
+    }
+    .solves-header { height: 34px; padding: 0 12px; }
+    .solves-title { font-size: 11.5px; }
+    .solves-header .clear-btn {
+      min-height: 32px;
+      padding: 0 4px;
+      font-size: 11.5px;
+    }
+    .solve { min-height: 38px; padding: 0 12px; gap: 4px; }
+    .solve .idx { flex: 0 0 24px; font-size: 12px; }
+    .solve .time { font-size: 15px; }
+    .solve-actions { gap: 3px; }
+    .act-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 32px;
+      min-height: 32px;
+      padding: 0;
+      border-radius: 7px;
+      font-size: 12.5px;
+    }
+    .act-btn:active { color: var(--txt); background: var(--card-bg-hover); }
+    .act-btn.del { margin-left: 0; font-size: 16px; }
+  }
+
+  /* 手机横屏：左计时 + 右侧统计/图案竖排卡片 */
+  @media (hover: none) and (pointer: coarse) and (orientation: landscape) {
+    .app {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+    header { grid-column: 1 / -1; grid-row: 1; padding: 6px 14px; }
+    .timer-area { grid-column: 1; grid-row: 2; padding: 0 14px 8px; }
+    .timer-center { transform: none; }
+    .scramble-wrap { padding: 8px 10px; }
+    #timer { font-size: clamp(48px, min(13vw, 23vh), 130px); }
+    #timer.small { font-size: clamp(38px, min(10vw, 18vh), 110px); }
+
+    .bottom-dock {
+      grid-column: 2;
+      grid-row: 2;
+      width: auto;
+      height: 100%;
+      min-height: 0;
+      align-items: stretch;
+      padding: 0 10px 10px 0;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 8px 10px;
+    }
+    .more-trigger { width: 40px; height: 40px; }
+    .stats-square,
+    .cube-preview-square {
+      height: 100%;
+      aspect-ratio: auto;
+    }
+    .stats-square { padding: 0; }
+    .stats-square .stats-title { height: 24px; padding: 0 9px; font-size: 9.5px; }
+    .stat-item { padding: 0 9px; }
+    .stat-item span { font-size: 9px; }
+    .stat-item b { font-size: 12px; }
+    .cube-preview-square .stats-title { height: 24px; font-size: 10px; }
+    .more-sheet { height: min(84vh, 560px); }
+  }
+
+  /* ================= 设置抽屉 ================= */
+  .settings-overlay{
+    position:fixed; inset:0; z-index:200;
+    background:var(--overlay-bg);
+    backdrop-filter:blur(4px);
+    -webkit-backdrop-filter:blur(4px);
+    opacity:0; pointer-events:none;
+    transition:opacity .22s;
+  }
+  .settings-overlay.show{ opacity:1; pointer-events:auto; }
+
+  .settings-sheet{
+    position:absolute; right:0; top:0; bottom:0;
+    width:min(380px, 90vw);
+    background:var(--sheet-bg);
+    border-left:1px solid var(--sheet-border);
+    transform:translateX(100%);
+    transition:transform .28s cubic-bezier(.4,0,.2,1), background .25s;
+    display:flex; flex-direction:column;
+    padding-top:env(safe-area-inset-top);
+    padding-bottom:env(safe-area-inset-bottom);
+    box-shadow:var(--square-shadow);
+  }
+  .settings-overlay.show .settings-sheet{ transform:translateX(0); }
+
+  .sheet-header{
+    flex:0 0 auto;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 20px 14px;
+  }
+  .sheet-title{ font-size:16px; font-weight:700; letter-spacing:.02em; color:var(--txt); }
+  .sheet-close{
+    width:32px; height:32px; border-radius:9px;
+    border:1px solid var(--icon-border);
+    background:var(--icon-bg);
+    color:var(--icon-color); cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:.15s;
+  }
+  .sheet-close:hover{ color:var(--txt); background:var(--card-bg-hover); }
+  .sheet-close svg{ width:16px; height:16px; }
+
+  .sheet-tabs{
+    flex:0 0 auto;
+    display:flex; gap:6px;
+    padding:0 20px 12px;
+    border-bottom:1px solid var(--sheet-border);
+    transition:border-color .25s;
+  }
+  .sheet-tab{
+    flex:1 1 0;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    font-family:inherit; font-size:13px; font-weight:600;
+    padding:9px 10px; border-radius:10px; cursor:pointer;
+    border:1px solid transparent;
+    background:transparent;
+    color:var(--sheet-tab-color);
+    transition:.15s;
+  }
+  .sheet-tab svg{ width:15px; height:15px; flex:0 0 auto; }
+  .sheet-tab:hover{ color:var(--txt); }
+  .sheet-tab.active{
+    background:var(--sheet-tab-active-bg);
+    border-color:var(--sheet-tab-active-border);
+    color:var(--sheet-tab-active-color);
+  }
+
+  .sheet-body{
+    flex:1 1 auto; min-height:0;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .tab-pane{ display:none; }
+  .tab-pane.active{ display:block; }
+
+  .setting-row{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:16px; padding:15px 20px;
+    border-bottom:1px solid var(--setting-border);
+    transition:border-color .25s;
+  }
+  .setting-row.col{
+    flex-direction:column;
+    align-items:stretch;
+    gap:12px;
+  }
+  .setting-text{ min-width:0; }
+  .setting-title{ font-size:14px; font-weight:600; color:var(--setting-title); transition:color .25s; }
+  .setting-desc{
+    margin-top:3px; font-size:12px; color:var(--setting-desc);
+    line-height:1.5; transition:color .25s;
+  }
+
+  .switch{ position:relative; display:inline-block; width:46px; height:27px; flex:0 0 auto; }
+  .switch input{ opacity:0; width:0; height:0; }
+  .slider{
+    position:absolute; inset:0; cursor:pointer;
+    background:var(--switch-bg); border-radius:999px; transition:.22s;
+  }
+  .slider::before{
+    content:''; position:absolute;
+    width:21px; height:21px; left:3px; top:3px;
+    background:#fff; border-radius:50%;
+    transition:.22s; box-shadow:0 1px 3px rgba(0,0,0,.4);
+  }
+  .switch input:checked + .slider{ background:var(--blue); }
+  .switch input:checked + .slider::before{ transform:translateX(19px); }
+
+  .seg{
+    display:flex; gap:4px; flex:0 0 auto;
+    padding:3px; border-radius:10px;
+    background:var(--seg-bg);
+    border:1px solid var(--seg-border);
+    flex-wrap:wrap;
+    transition:background .25s, border-color .25s;
+  }
+  .seg-btn{
+    font-family:inherit; font-size:12.5px; font-weight:600;
+    padding:6px 13px; border-radius:8px; cursor:pointer;
+    border:none; background:transparent; color:var(--seg-btn-color);
+    transition:.15s;
+    flex:1 1 auto;
+    text-align:center;
+    white-space:nowrap;
+  }
+  .seg-btn:hover{ color:var(--seg-btn-hover); }
+  .seg-btn.active{
+    background:var(--seg-btn-active-bg);
+    color:var(--seg-btn-active-color);
+  }
+
+  .vol-wrap{
+    display:flex; align-items:center; gap:12px;
+  }
+  .vol-wrap input[type="range"]{
+    flex:1 1 auto;
+    -webkit-appearance:none;
+    appearance:none;
+    height:6px;
+    border-radius:3px;
+    background:var(--switch-bg);
+    outline:none;
+    cursor:pointer;
+  }
+  .vol-wrap input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    appearance:none;
+    width:18px; height:18px;
+    border-radius:50%;
+    background:var(--blue);
+    border:2px solid #fff;
+    box-shadow:0 1px 4px rgba(0,0,0,.3);
+    cursor:pointer;
+  }
+  .vol-wrap input[type="range"]::-moz-range-thumb{
+    width:16px; height:16px;
+    border-radius:50%;
+    background:var(--blue);
+    border:2px solid #fff;
+    box-shadow:0 1px 4px rgba(0,0,0,.3);
+    cursor:pointer;
+  }
+  .vol-wrap input[type="range"]:disabled{
+    opacity:.4; cursor:not-allowed;
+  }
+  .vol-val{
+    flex:0 0 34px;
+    text-align:right;
+    font-size:12.5px; font-weight:700;
+    color:var(--setting-title);
+    font-variant-numeric:tabular-nums;
+  }
+
+  /* 默认按钮样式 */
+  .reset-btn-sm {
+    flex: 0 0 auto;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--btn-primary-border);
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-color);
+    cursor: pointer;
+    transition: all .15s;
+    margin-left: 4px;
+  }
+  .reset-btn-sm:hover { opacity: 0.8; }
+  .reset-btn-sm:active { transform: scale(0.96); }
+
+  .theme-picker{ display:flex; gap:8px; flex-wrap:wrap; }
+  .theme-btn{
+    flex:1 1 0;
+    min-width:70px; height:46px; border-radius:11px;
+    border:1px solid var(--icon-border);
+    background:var(--icon-bg);
+    color:var(--icon-color);
+    display:flex; align-items:center; justify-content:center; gap:7px;
+    cursor:pointer;
+    font-family:inherit; font-size:12.5px; font-weight:600;
+    transition:all .18s;
+  }
+  .theme-btn svg{ width:18px; height:18px; flex:0 0 auto; }
+  .theme-btn:hover{ color:var(--txt); background:var(--card-bg-hover); }
+  .theme-btn.active{
+    background:rgba(91,140,255,.16);
+    border-color:rgba(91,140,255,.5);
+    color:var(--blue);
+  }
+  .theme-btn:active{ transform:scale(.97); }
+
+  .sheet-tip{
+    padding:16px 20px;
+    font-size:11.5px; color:var(--setting-desc);
+    line-height:1.7;
+  }
+  .sheet-tip kbd{
+    display:inline-block;
+    padding:1px 6px; margin:0 2px;
+    border:1px solid var(--line-strong);
+    border-radius:5px;
+    background:var(--card-bg);
+    font-family:inherit; font-size:11px; color:var(--dim);
+  }
+
+  /* ================= 成绩详情面板（历史排行） ================= */
+  .stats-detail-overlay {
+    position: fixed; inset: 0; z-index: 300;
+    background: var(--overlay-bg);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    opacity: 0; pointer-events: none;
+    transition: opacity .22s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .stats-detail-overlay.show { opacity: 1; pointer-events: auto; }
+
+  .stats-detail-sheet {
+    width: min(600px, 90vw);
+    max-height: 80vh;
+    background: var(--sheet-bg);
+    border-radius: 20px;
+    border: 1px solid var(--sheet-border);
+    box-shadow: 0 20px 60px rgba(0,0,0,.4);
+    transform: scale(0.9);
+    transition: transform .28s cubic-bezier(.34,1.56,.64,1), background .25s;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .stats-detail-overlay.show .stats-detail-sheet { transform: scale(1); }
+
+  .stats-detail-header {
+    flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--sheet-border);
+  }
+  .stats-detail-title { font-size: 16px; font-weight: 700; color: var(--txt); }
+  
+  .stats-detail-list {
+    list-style: none; margin: 0; padding: 0;
+    flex: 1 1 auto; min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+  .stats-detail-list::-webkit-scrollbar { width: 6px; }
+  .stats-detail-list::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+  
+  .stats-detail-item {
+    display: flex; 
+    align-items: center;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--solve-border);
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition: background .12s;
+  }
+  .stats-detail-item:hover {
+    background: var(--solve-hover);
+  }
+  .stats-detail-item.dnf .main-val {
+    color: var(--red);
+    opacity: .85;
+  }
+  .stats-detail-item.flash {
+    animation: statsFlash 1s ease;
+  }
+  @keyframes statsFlash {
+    0% { background: rgba(91,140,255,.28); }
+    100% { background: transparent; }
+  }
+  
+  /* 排名徽章 */
+  .rank-badge {
+    flex: 0 0 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .medal {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 50%;
+    font-size: 12px; font-weight: 700; color: #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  }
+  .medal.gold { background: linear-gradient(135deg, #ffd700, #ff8c00); }
+  .medal.silver { background: linear-gradient(135deg, #c0c0c0, #808080); }
+  .medal.bronze { background: linear-gradient(135deg, #cd7f32, #8b4513); }
+  .rank-text { font-size: 14px; color: var(--dim); font-weight: 600; }
+
+  .stats-detail-item .main-val {
+    flex: 0 0 auto;
+    min-width: 80px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: var(--mono-font);
+    color: var(--txt);
+  }
+  .stats-detail-item .main-val .raw-t {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--dim);
+  }
+  .stats-detail-item .date-val {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    font-size: 12.5px;
+    color: var(--dim);
+    line-height: 1.4;
+  }
+  .stats-detail-item .date-val .t-time {
+    font-size: 11px;
+    color: var(--dim2);
+  }
+
+  /* 统计面板内的编辑按钮 */
+  .stats-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex: 0 0 auto;
+    margin: 0 10px 0 0;
+  }
+  .stats-actions .act-btn {
+    font-size: 12px;
+  }
+
+  /* 统一详情弹层基础 */
+  .detail-modal-overlay {
+    position: fixed; inset: 0; z-index: 350;
+    background: var(--overlay-bg-strong);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    opacity: 0; pointer-events: none;
+    transition: opacity .22s;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .detail-modal-overlay.show { opacity: 1; pointer-events: auto; }
+
+  .detail-modal {
+    width: min(500px, 100%);
+    max-height: 85vh;
+    background: var(--sheet-bg);
+    border-radius: 20px;
+    border: 1px solid var(--sheet-border);
+    box-shadow: 0 20px 60px rgba(0,0,0,.4);
+    transform: scale(0.9);
+    transition: transform .28s cubic-bezier(.34,1.56,.64,1), background .25s;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .detail-modal-overlay.show .detail-modal { transform: scale(1); }
+
+  .detail-modal-header {
+    flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--sheet-border);
+  }
+  .detail-modal-title { font-size: 16px; font-weight: 700; color: var(--txt); }
+  
+  .detail-modal-body {
+    flex: 1 1 auto; min-height: 0;
+    overflow-y: auto;
+    padding: 16px 20px;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  .detail-modal-footer {
+    flex: 0 0 auto;
+    padding: 12px 20px 20px;
+    border-top: 1px solid var(--sheet-border);
+    display: flex;
+    justify-content: center;
+  }
+
+  .btn-copy {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 24px;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 1px solid var(--btn-primary-border);
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-color);
+    transition: all .15s;
+  }
+  .btn-copy:hover { opacity: 0.8; }
+  .btn-copy:active { transform: scale(.97); }
+
+  /* 单条详情样式 */
+  .detail-row {
+    margin-bottom: 16px;
+  }
+  .detail-row:last-child {
+    margin-bottom: 0;
+  }
+  .detail-label {
+    display: block;
+    font-size: 12px;
+    color: var(--dim);
+    margin-bottom: 6px;
+  }
+  .detail-val {
+    display: block;
+    font-size: 14px;
+    color: var(--txt);
+    line-height: 1.6;
+  }
+  .detail-val.scramble {
+    font-family: var(--mono-font);
+    background: var(--card-bg);
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    word-break: break-all;
+  }
+
+  /* 还原详情里的打乱图案 */
+  .detail-cube-wrap {
+    --cube-cell-size: 14px;
+    --cube-gap: 2px;
+    display: grid;
+    grid-template-columns: repeat(4, max-content);
+    grid-template-rows: repeat(3, max-content);
+    justify-content: center;
+    align-content: center;
+    gap: 4px;
+    padding: 10px;
+    background: var(--card-bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  /* 组详情样式 */
+  .group-detail-list {
+    list-style: none; margin: 0; padding: 0;
+  }
+  .group-detail-item {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--solve-border);
+  }
+  .group-detail-item:last-child {
+    border-bottom: none;
+  }
+  .gd-top {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .gd-idx {
+    font-size: 12px;
+    color: var(--dim);
+  }
+  .gd-time {
+    font-size: 14px;
+    font-weight: 700;
+    font-family: var(--mono-font);
+    color: var(--txt);
+  }
+  .gd-scramble {
+    font-family: var(--mono-font);
+    font-size: 13px;
+    color: var(--blue);
+    line-height: 1.5;
+    margin-bottom: 6px;
+    word-break: break-all;
+  }
+  .gd-date {
+    font-size: 11px;
+    color: var(--dim2);
+  }
+
+  /* ================= 分组管理弹层 ================= */
+  .btn-new-group {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; height: 42px;
+    margin-bottom: 14px;
+    border-radius: 10px;
+    border: 1px solid var(--btn-primary-border);
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-color);
+    font-family: inherit; font-size: 13.5px; font-weight: 700;
+    cursor: pointer; transition: all .15s;
+  }
+  .btn-new-group:hover { opacity: .85; }
+  .btn-new-group:active { transform: scale(.985); }
+  .btn-new-group svg { width: 16px; height: 16px; flex: 0 0 auto; }
+
+  .group-manage-list { list-style: none; margin: 0; padding: 0; }
+  .group-manage-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px 6px 6px; margin-bottom: 6px;
+    min-height: 44px;
+    border-radius: 11px;
+    border: 1px solid var(--card-border);
+    background: var(--card-bg);
+    cursor: pointer;
+    touch-action: pan-y;
+    -webkit-touch-callout: none;
+    transition: background .15s, border-color .15s, box-shadow .15s, opacity .15s;
+  }
+  .group-manage-item:hover { background: var(--card-bg-hover); }
+  .group-manage-item.active {
+    background: var(--sheet-tab-active-bg);
+    border-color: var(--sheet-tab-active-border);
+    box-shadow: inset 3px 0 0 var(--blue);
+  }
+  .group-manage-item.dragging {
+    opacity: .75;
+    border-color: var(--btn-primary-border);
+    box-shadow: 0 8px 24px rgba(0,0,0,.28);
+  }
+  .gm-drag {
+    flex: 0 0 auto;
+    width: 18px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--dim2);
+    cursor: grab;
+    touch-action: none;
+  }
+  .gm-drag:active { cursor: grabbing; }
+  .gm-drag svg { width: 14px; height: 14px; }
+  .gm-name {
+    flex: 1 1 auto; min-width: 0;
+    font-size: 14px; font-weight: 600; color: var(--txt);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .group-manage-item.active .gm-name { color: var(--sheet-tab-active-color); }
+  .gm-actions {
+    flex: 0 0 auto;
+    display: flex; align-items: center; gap: 2px;
+  }
+  .gm-act {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 7px;
+    color: var(--dim);
+    transition: color .15s, background .15s;
+  }
+  .gm-act svg { width: 15px; height: 15px; }
+  .gm-act:hover { color: var(--txt); background: var(--card-bg-hover); }
+  .gm-del:hover { color: var(--red); background: rgba(224,43,60,.12); }
+  .gm-name-input {
+    flex: 1 1 auto; min-width: 0;
+    height: 32px; padding: 0 9px;
+    border-radius: 8px;
+    border: 1px solid var(--btn-primary-border);
+    background: var(--sheet-bg);
+    color: var(--txt);
+    font-family: inherit; font-size: 13px;
+    outline: none;
+    -webkit-user-select: text; user-select: text;
+  }
+  .gm-save-btn {
+    flex: 0 0 auto;
+    height: 28px; padding: 0 10px;
+    border-radius: 8px;
+    border: 1px solid var(--btn-primary-border);
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-color);
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .gm-save-btn.ghost {
+    border-color: var(--line-strong);
+    background: transparent;
+    color: var(--dim);
+  }
+  .gm-save-btn:hover { opacity: .85; }
+  .gm-save-btn:active { transform: scale(.97); }
+  .group-hint {
+    margin: 10px 0 2px;
+    text-align: center;
+    font-size: 11px;
+    color: var(--dim2);
+    letter-spacing: .02em;
+  }
+  .btn-clear-group {
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    width: 100%;
+    margin-top: 8px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1.5px solid rgba(224,43,60,.55);
+    background: rgba(224,43,60,.06);
+    color: var(--red);
+    font-family: inherit; font-size: 12.5px; font-weight: 700;
+    cursor: pointer; transition: all .15s;
+  }
+  .btn-clear-group svg { width: 15px; height: 15px; flex: 0 0 auto; }
+  .btn-clear-group:hover { background: rgba(224,43,60,.14); border-color: var(--red); }
+  .btn-clear-group:active { transform: scale(.985); }
+
+  /* ================= 新建分组命名弹层 ================= */
+  .group-name-overlay { z-index: 360; }
+  .group-name-modal { width: min(380px, 100%); }
+  .group-name-body { padding: 22px; }
+  .group-name-title {
+    font-size: 15px; font-weight: 700; color: var(--txt);
+    margin-bottom: 12px;
+  }
+  .group-name-modal-input {
+    width: 100%;
+    height: 46px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 1.5px solid var(--btn-primary-border);
+    background: var(--card-bg);
+    color: var(--txt);
+    font-family: inherit;
+    font-size: 15px;
+    outline: none;
+    -webkit-user-select: text; user-select: text;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .group-name-modal-input:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(91,140,255,.15);
+  }
+  .group-name-modal-input::placeholder { color: var(--dim2); }
+  .group-name-actions {
+    display: flex; justify-content: flex-end; gap: 10px;
+    margin-top: 18px;
+  }
+  .gm-modal-btn {
+    height: 38px; padding: 0 24px;
+    border-radius: 999px;
+    border: 1px solid var(--blue);
+    background: var(--blue);
+    color: #fff;
+    font-family: inherit; font-size: 13.5px; font-weight: 700;
+    cursor: pointer; transition: all .15s;
+  }
+  .gm-modal-btn:hover { opacity: .88; }
+  .gm-modal-btn:active { transform: scale(.97); }
+  .gm-modal-btn.ghost {
+    border-color: var(--line-strong);
+    background: var(--card-bg);
+    color: var(--dim);
+  }
+  .gm-modal-btn.ghost:hover { color: var(--txt); background: var(--card-bg-hover); }
+
+  /* ================= 删除确认弹层 ================= */
+  .confirm-overlay{
+    position:fixed; inset:0; z-index:400;
+    display:flex; align-items:center; justify-content:center;
+    padding:24px;
+    background:var(--overlay-bg-strong);
+    backdrop-filter:blur(5px);
+    -webkit-backdrop-filter:blur(5px);
+    opacity:0; pointer-events:none;
+    transition:opacity .2s;
+  }
+  .confirm-overlay.show{ opacity:1; pointer-events:auto; }
+  .confirm-card{
+    width:min(340px, 100%);
+    background:var(--confirm-bg);
+    border:1px solid var(--confirm-border);
+    border-radius:18px;
+    padding:22px;
+    box-shadow:var(--square-shadow);
+    transform:scale(.94);
+    transition:transform .2s cubic-bezier(.34,1.56,.64,1), background .25s;
+  }
+  .confirm-overlay.show .confirm-card{ transform:scale(1); }
+  .confirm-title{
+    font-size:16px; font-weight:700; color:var(--confirm-title);
+    margin-bottom:6px;
+  }
+  .confirm-desc{
+    font-size:13px; color:var(--confirm-desc); line-height:1.55;
+    margin-bottom:20px;
+  }
+  .confirm-desc strong{ color:var(--confirm-desc-strong); font-weight:700; }
+  .confirm-actions{ display:flex; gap:10px; }
+  .confirm-actions button{
+    flex:1 1 0;
+    font-family:inherit; font-size:13.5px; font-weight:600;
+    padding:10px 14px; border-radius:11px; cursor:pointer;
+    transition:.15s;
+  }
+  .btn-cancel{
+    border:1px solid var(--btn-cancel-border);
+    background:var(--btn-cancel-bg);
+    color:var(--btn-cancel-color);
+  }
+  .btn-cancel:hover{ background:var(--btn-cancel-hover); }
+  .btn-danger{
+    border:1px solid rgba(224,43,60,.5);
+    background:rgba(224,43,60,.16);
+    color:var(--red);
+  }
+  .btn-danger:hover{ background:rgba(224,43,60,.26); }
+  .confirm-actions button:active{ transform:scale(.97); }
+
+  .toast{
+    position:fixed; left:50%; bottom:28px;
+    transform:translate(-50%,16px);
+    background:var(--toast-bg);
+    border:1px solid var(--toast-border);
+    color:var(--toast-color); font-size:13px;
+    padding:10px 18px; border-radius:10px;
+    opacity:0; pointer-events:none;
+    transition:all .22s; z-index:500;
+    backdrop-filter:blur(10px);
+    max-width:calc(100vw - 40px);
+    text-align:center;
+  }
+  .toast.show{ opacity:1; transform:translate(-50%,0); }
+
+  /* ================= 庆祝特效 ================= */
+  .celebration-container {
+    position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+    overflow: hidden;
+  }
+  .confetti {
+    position: absolute;
+    top: -20px;
+    border-radius: 50%;
+    animation: fall linear forwards;
+  }
+  @keyframes fall {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+
+  /* ================= 手机端弹层 / 触控尺寸 ================= */
+  @media (max-width: 768px), (hover: none) and (pointer: coarse) {
+    button, .group-manage-item, .stat-item { touch-action: manipulation; }
+
+    /* 手机 GPU 性能较弱：去掉大范围毛玻璃和大号发光阴影，避免弹层/计时切换时闪屏 */
+    .scramble-wrap,
+    .settings-overlay,
+    .stats-detail-overlay,
+    .detail-modal-overlay,
+    .confirm-overlay,
+    .toast {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+    #timer,
+    .timer-area.holding #timer,
+    .timer-area.ready #timer,
+    #timer.warn {
+      text-shadow: none;
+    }
+
+    /* 设置：改为底部抽屉，单手更容易操作 */
+    .settings-overlay {
+      display: flex;
+      align-items: flex-end;
+      justify-content: stretch;
+    }
+    .settings-sheet {
+      position: relative;
+      inset: auto;
+      width: 100%;
+      max-height: 88vh;
+      max-height: 88dvh;
+      border-left: none;
+      border-top: 1px solid var(--sheet-border);
+      border-radius: 20px 20px 0 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      transform: translateY(100%);
+    }
+    .settings-overlay.show .settings-sheet { transform: translateY(0); }
+    .sheet-header { padding: 14px 18px 10px; }
+    .sheet-close { width: 40px; height: 40px; border-radius: 11px; }
+    .sheet-tabs { padding: 0 18px 10px; }
+    .sheet-tab { min-height: 42px; padding: 9px 10px; }
+    .setting-row { padding: 14px 18px; }
+    .seg-btn { min-height: 38px; }
+    .theme-btn { height: 48px; }
+    .vol-wrap input[type="range"]::-webkit-slider-thumb { width: 22px; height: 22px; }
+    .vol-wrap input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; }
+    .sheet-tip { padding: 14px 18px 18px; }
+    .sheet-body { padding-bottom: env(safe-area-inset-bottom); }
+
+    /* 历史排行 / 详情弹层 */
+    .stats-detail-overlay,
+    .detail-modal-overlay { padding: 12px; }
+    .stats-detail-sheet,
+    .detail-modal {
+      width: min(600px, calc(100vw - 24px));
+      max-height: 86vh;
+      max-height: 86dvh;
+      border-radius: 18px;
+    }
+    .stats-detail-header,
+    .detail-modal-header { padding: 12px 14px 10px; }
+    .stats-detail-item { padding: 8px 12px; gap: 2px; }
+    .rank-badge { flex: 0 0 30px; order: 1; }
+    .stats-detail-item .main-val { min-width: 64px; font-size: 15px; order: 2; }
+    .stats-detail-item .date-val {
+      order: 3;
+      min-width: 0;
+      overflow: hidden;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    /* 编辑按钮移到最右侧，点中间的成绩区域只会打开详情，减少误触 +2 / DNF */
+    .stats-actions {
+      order: 4;
+      gap: 2px;
+      margin: 0 0 0 4px;
+      padding-left: 6px;
+      border-left: 1px solid var(--solve-border);
+    }
+    .stats-actions .act-btn { min-width: 32px; min-height: 32px; border-radius: 7px; font-size: 12px; }
+
+    .detail-modal-body { padding: 14px 16px; }
+    .detail-modal-footer { padding: 10px 16px calc(14px + env(safe-area-inset-bottom)); }
+    .btn-copy { width: 100%; min-height: 46px; }
+    .detail-val.scramble { padding: 10px; font-size: 13px; }
+    .gd-scramble { font-size: 12.5px; }
+
+    /* 分组管理 */
+    .btn-new-group { height: 46px; }
+    .group-manage-item { min-height: 52px; padding: 6px 8px; }
+    .gm-drag { width: 34px; height: 40px; }
+    .gm-act { width: 36px; height: 36px; }
+    .gm-save-btn { height: 34px; }
+    .btn-clear-group { min-height: 44px; }
+
+    /* 命名输入与确认弹层 */
+    .group-name-modal { width: min(420px, calc(100vw - 24px)); }
+    .group-name-body { padding: 20px; }
+    .group-name-modal-input { height: 50px; font-size: 16px; }
+    .gm-modal-btn { min-height: 44px; }
+    .confirm-overlay { padding: 18px; }
+    .confirm-card { padding: 20px; }
+    .confirm-actions button { min-height: 46px; }
+    .toast { bottom: calc(16px + env(safe-area-inset-bottom)); }
+  }
+
+  /* 很矮的竖屏手机：成绩编辑条改为跟随布局，避免被计时区域裁剪 */
+  @media (max-height: 600px) and (orientation: portrait) {
+    .post-solve-actions {
+      position: static;
+      transform: none;
+      margin-top: 2px;
+    }
+  }
+
+  /* 很窄的老机型：压缩两个方块和“更多”抽屉 */
+  @media (max-width: 350px) {
+    .more-trigger { width: 40px; height: 40px; }
+    .stats-square { padding: 0; }
+    .stats-square .stats-title { height: 26px; padding: 0 9px; font-size: 9.5px; }
+    .stat-item { padding: 0 9px; }
+    .stat-item span { font-size: 9px; }
+    .stat-item b { font-size: 12px; }
+    .cube-preview-square .stats-title {
+      height: 24px;
+      padding: 0 9px;
+      font-size: 10px;
+    }
+    .more-sheet { height: 78vh; }
+    .more-act { height: 44px; font-size: 11.5px; }
+    .more-act svg { width: 15px; height: 15px; }
+    .solve .idx { flex: 0 0 20px; }
+    .solve .time { font-size: 14px; }
+    .solve-actions .act-btn { min-width: 30px; }
+  }
+</style>
+<script>
+  // 在首屏渲染前恢复已保存的主题，避免先闪一下默认主题
+  (function () {
+    try {
+      var d = JSON.parse(localStorage.getItem('cube-timer-v1') || '{}');
+      if (d.theme === 'dark' || d.theme === 'light') {
+        document.documentElement.setAttribute('data-theme', d.theme);
+        var m = document.querySelector('meta[name="theme-color"]');
+        if (m) m.setAttribute('content', d.theme === 'light' ? '#f2f2f7' : '#08080a');
+      }
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <img class="brand-mark brand-logo" src="assets/cube-logo.png" alt="三阶魔方" draggable="false">
+      <span class="brand-name">Speed<span class="brand-name-x">X</span></span>
+    </div>
+    <div class="tools">
+      <button type="button" class="icon-btn" id="btnSettings" title="设置" aria-label="设置">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="timer-area" id="timerArea">
+    <div class="scramble-wrap">
+      <div class="scramble" id="scramble" title="点击复制打乱"></div>
+      <button class="scramble-refresh" id="btnScramble" title="换一个打乱">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 4v6h-6"></path>
+          <path d="M1 20v-6h6"></path>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
+          <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div class="timer-center">
+      <div class="timer-stack">
+        <div id="timer">0.00</div>
+        <div class="hint" id="hint">按住不放 · 变绿后松开</div>
+        <div class="post-solve-actions" id="postSolveActions" role="group" aria-label="编辑本次成绩">
+          <button type="button" class="post-act" id="postActP2">+2</button>
+          <button type="button" class="post-act" id="postActDnf">DNF</button>
+          <button type="button" class="post-act del" id="postActDel">删除</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="bottom-dock">
+    <!-- 左下角容器：分组/类型 + 统计 + 成绩 -->
+    <div class="bottom-left-container">
+  <div class="left-tools">
+    <button type="button" class="group-btn" id="btnGroups" title="分组管理">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+        <path d="M12 11v6M9 14h6"></path>
+      </svg>
+      <span class="group-btn-name" id="groupBtnName">默认分组</span>
+    </button>
+    <button type="button" class="icon-btn puzzle-btn" id="btnPuzzle" title="魔方类型：3×3" aria-label="魔方类型：3×3">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="3"></rect>
+        <path d="M9 3v18M15 3v18M3 9h18M3 15h18"></path>
+      </svg>
+      <span>3×3</span>
+    </button>
+  </div>
+  <button type="button" class="icon-btn more-trigger" id="btnMore" title="更多功能" aria-label="更多功能">
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <circle cx="6" cy="12" r="1.8"></circle>
+      <circle cx="12" cy="12" r="1.8"></circle>
+      <circle cx="18" cy="12" r="1.8"></circle>
+    </svg>
+  </button>
+  <div class="stats-square">
+    <div class="stats-title">成绩统计</div>
+    <div class="stats-avg">
+      <div class="stat-item static">
+        <span>所有平均</span>
+        <b id="allAvg">—</b>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-item" id="statPb">
+        <span>PB</span>
+        <b id="best">—</b>
+      </div>
+      <div class="stat-item" id="statAo5">
+        <span>ao5</span>
+        <b id="ao5">—</b>
+      </div>
+      <div class="stat-item" id="statAo12">
+        <span>ao12</span>
+        <b id="ao12">—</b>
+      </div>
+      <div class="stat-item static">
+        <span>还原</span>
+        <b id="count">0</b>
+      </div>
+    </div>
+  </div>
+
+  <div class="more-sheet-overlay" id="moreSheetOverlay">
+    <div class="more-sheet" role="dialog" aria-label="更多功能">
+      <div class="more-sheet-head">
+        <span class="more-handle"></span>
+        <button type="button" class="more-close" id="btnMoreClose" aria-label="关闭">×</button>
+      </div>
+      <div class="more-actions">
+        <button type="button" class="more-act" id="btnMoreGroups" title="分组管理">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <path d="M12 11v6M9 14h6"></path>
+          </svg>
+          <span id="moreGroupBtnName" class="more-act-name">默认分组</span>
+        </button>
+        <button type="button" class="more-act" id="btnMorePuzzle" title="当前分组的魔方类型">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="3"></rect>
+            <path d="M9 3v18M15 3v18M3 9h18M3 15h18"></path>
+          </svg>
+          <span>3×3</span>
+        </button>
+      </div>
+      <div class="solves-square">
+        <div class="solves-header">
+          <span class="solves-title">成绩记录</span>
+          <button type="button" class="clear-btn" id="btnClear">清空成绩</button>
+        </div>
+        <ul id="solves" class="solves-list"></ul>
+      </div>
+    </div>
+  </div>
+    </div>
+
+    <!-- 右下角容器：打乱图案 -->
+    <div class="bottom-right-container">
+      <div class="cube-preview-square">
+        <div class="stats-title">打乱图案</div>
+        <div class="cube-2d-wrap" id="cubePreview">
+          <div class="cube-face face-U" id="face-U"></div>
+          <div class="cube-face face-L" id="face-L"></div>
+          <div class="cube-face face-F" id="face-F"></div>
+          <div class="cube-face face-R" id="face-R"></div>
+          <div class="cube-face face-B" id="face-B"></div>
+          <div class="cube-face face-D" id="face-D"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 统计历史排行弹层 -->
+<div class="stats-detail-overlay" id="statsDetailOverlay">
+  <div class="stats-detail-sheet" role="dialog" aria-label="历史排行">
+    <div class="stats-detail-header">
+      <div class="stats-detail-title" id="statsDetailTitle">PB 历史</div>
+      <button type="button" class="sheet-close" id="btnCloseStatsDetail" aria-label="关闭">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <ul class="stats-detail-list" id="statsDetailList"></ul>
+  </div>
+</div>
+
+<!-- 单条还原详情弹层 -->
+<div class="detail-modal-overlay" id="solveDetailOverlay">
+  <div class="detail-modal" role="dialog" aria-label="还原详情">
+    <div class="detail-modal-header">
+      <div class="detail-modal-title">还原详情</div>
+      <button type="button" class="sheet-close" id="btnCloseSolveDetail" aria-label="关闭">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="detail-modal-body" id="solveDetailBody"></div>
+    <div class="detail-modal-footer">
+      <button type="button" class="btn-copy" id="btnCopySolveDetail">复制详细信息</button>
+    </div>
+  </div>
+</div>
+
+<!-- 组还原详情弹层 -->
+<div class="detail-modal-overlay" id="groupDetailOverlay">
+  <div class="detail-modal" role="dialog" aria-label="组还原详情">
+    <div class="detail-modal-header">
+      <div class="detail-modal-title" id="groupDetailTitle">统计详情</div>
+      <button type="button" class="sheet-close" id="btnCloseGroupDetail" aria-label="关闭">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="detail-modal-body">
+      <ul class="group-detail-list" id="groupDetailList"></ul>
+    </div>
+    <div class="detail-modal-footer">
+      <button type="button" class="btn-copy" id="btnCopyGroupDetail">复制全部信息</button>
+    </div>
+  </div>
+</div>
+
+<!-- 分组管理弹层 -->
+<div class="detail-modal-overlay" id="groupManageOverlay">
+  <div class="detail-modal" role="dialog" aria-label="分组管理">
+    <div class="detail-modal-header">
+      <div class="detail-modal-title">分组</div>
+      <button type="button" class="sheet-close" id="btnCloseGroupManage" aria-label="关闭">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="detail-modal-body">
+      <button type="button" class="btn-new-group" id="btnNewGroup">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <path d="M12 5v14M5 12h14"></path>
+        </svg>
+        <span>新建分组</span>
+      </button>
+      <ul class="group-manage-list" id="groupManageList"></ul>
+      <div class="group-hint">按住拖动可调整分组顺序</div>
+      <button type="button" class="btn-clear-group" id="btnClearGroup">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 6h18"></path>
+          <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"></path>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+          <path d="M10 11v6M14 11v6"></path>
+        </svg>
+        <span>清空当前分组成绩</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 新建分组命名弹层 -->
+<div class="detail-modal-overlay group-name-overlay" id="groupNameOverlay">
+  <div class="detail-modal group-name-modal" role="dialog" aria-label="新分组的名称">
+    <div class="group-name-body">
+      <div class="group-name-title">新分组的名称</div>
+      <input type="text" id="groupNameModalInput" class="group-name-modal-input" maxlength="24" placeholder="新建分组">
+      <div class="group-name-actions">
+        <button type="button" class="gm-modal-btn ghost" id="btnGroupNameModalCancel">取消</button>
+        <button type="button" class="gm-modal-btn" id="btnGroupNameModalOk">确定</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 设置抽屉 -->
+<div class="settings-overlay" id="settingsOverlay">
+  <div class="settings-sheet" role="dialog" aria-label="设置">
+    <div class="sheet-header">
+      <div class="sheet-title">设置</div>
+      <button type="button" class="sheet-close" id="btnCloseSettings" aria-label="关闭">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="sheet-tabs">
+      <button type="button" class="sheet-tab active" data-tab="timer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="13" r="8"></circle>
+          <path d="M12 9v4l2.5 2.5"></path>
+          <path d="M9 2h6"></path>
+          <path d="M12 2v3"></path>
+        </svg>
+        <span>计时</span>
+      </button>
+      <button type="button" class="sheet-tab" data-tab="personal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a10 10 0 0 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.4-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.3c2 0 3.7-1.6 3.7-3.7C21 6.2 16.9 2 12 2z"></path>
+          <circle cx="7.5" cy="10.5" r="1"></circle>
+          <circle cx="12" cy="7.5" r="1"></circle>
+          <circle cx="16.5" cy="10.5" r="1"></circle>
+        </svg>
+        <span>个性化</span>
+      </button>
+    </div>
+
+    <div class="sheet-body">
+      <div class="tab-pane active" data-pane="timer">
+        
+        <!-- 1. 计时隐藏所有元素 -->
+        <div class="setting-row">
+          <div class="setting-text">
+            <div class="setting-title">计时过程中隐藏所有元素</div>
+            <div class="setting-desc">计时时全屏沉浸，仅显示计时数字</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="hideAllToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <!-- 2. WCA观察 -->
+        <div class="setting-row">
+          <div class="setting-text">
+            <div class="setting-title">WCA观察</div>
+            <div class="setting-desc">按住空格（手机端按住屏幕）后松开，进入 15 秒观察倒计时；观察中再按住，变绿后松开开始计时。超时自动 +2 或 DNF。</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="obsToggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <!-- 3. 观察语音提示 -->
+        <div class="setting-row">
+          <div class="setting-text">
+            <div class="setting-title">观察语音提示</div>
+            <div class="setting-desc">8 秒和 12 秒时语音提醒</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="voiceToggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <!-- 4. 语音音量 -->
+        <div class="setting-row col">
+          <div class="setting-text">
+            <div class="setting-title">语音音量</div>
+            <div class="setting-desc">调节观察语音提示的音量（1 ~ 100）</div>
+          </div>
+          <div class="vol-wrap">
+            <input type="range" id="volRange" min="1" max="100" step="1" value="80" disabled>
+            <span class="vol-val" id="volVal">80</span>
+            <button type="button" class="reset-btn-sm" id="btnResetVol">默认</button>
+          </div>
+        </div>
+
+        <!-- 5. 还原过程中隐藏时间 -->
+        <div class="setting-row">
+          <div class="setting-text">
+            <div class="setting-title">还原过程中隐藏时间</div>
+            <div class="setting-desc">计时过程中显示“还原”，停止后才显示成绩</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="hideTimeToggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <!-- 6. 打乱公式字体大小 -->
+        <div class="setting-row col">
+          <div class="setting-text">
+            <div class="setting-title">打乱公式字体大小</div>
+            <div class="setting-desc">调整打乱公式的字体大小（0 ~ 100）</div>
+          </div>
+          <div class="vol-wrap">
+            <input type="range" id="scrambleSizeRange" min="0" max="100" step="1" value="50">
+            <span class="vol-val" id="scrambleSizeVal">50</span>
+            <button type="button" class="reset-btn-sm" id="btnResetScrambleSize">默认</button>
+          </div>
+        </div>
+
+        <div class="sheet-tip">
+          按 <kbd>空格</kbd> 按住松开开始计时；计时中按任意键停止、按 <kbd>Esc</kbd> 取消本次计时；按 <kbd>Alt</kbd> + <kbd>Z</kbd> 打开删除确认（<kbd>Enter</kbd> 确认）；按 <kbd>Alt</kbd> + <kbd>右方向键</kbd> 换打乱。
+          <br>手机端：按住计时区域后松开开始计时；开启 WCA 观察时，按住后松开先进入观察。计时中轻触屏幕停止；在计时区域上划换打乱、下滑删除最近一条成绩。
+        </div>
+      </div>
+
+      <div class="tab-pane" data-pane="personal">
+        <div class="setting-row col">
+          <div class="setting-text">
+            <div class="setting-title">计时器字体</div>
+            <div class="setting-desc">选择计时数字的字体样式</div>
+          </div>
+          <div class="seg" id="segFont">
+            <button type="button" class="seg-btn active" data-font="mono">等宽</button>
+            <button type="button" class="seg-btn" data-font="sans">无衬线</button>
+            <button type="button" class="seg-btn" data-font="serif">衬线</button>
+            <button type="button" class="seg-btn" data-font="rounded">圆润</button>
+          </div>
+        </div>
+        <div class="setting-row col">
+          <div class="setting-text">
+            <div class="setting-title">界面主题</div>
+            <div class="setting-desc">切换计时器界面的日间 / 夜间外观</div>
+          </div>
+          <div class="theme-picker" id="themePicker">
+            <button type="button" class="theme-btn active" data-theme="light" title="日间">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="4.5"></circle>
+                <line x1="12" y1="1.5" x2="12" y2="3.5"></line>
+                <line x1="12" y1="20.5" x2="12" y2="22.5"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1.5" y1="12" x2="3.5" y2="12"></line>
+                <line x1="20.5" y1="12" x2="22.5" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+              </svg>
+              <span>日间</span>
+            </button>
+            <button type="button" class="theme-btn" data-theme="dark" title="夜间">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+              <span>夜间</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 删除确认弹层 -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-card" role="dialog" aria-label="删除成绩确认">
+    <div class="confirm-title">删除成绩？</div>
+    <div class="confirm-desc" id="confirmDesc">此操作不可恢复。</div>
+    <div class="confirm-actions">
+      <button type="button" class="btn-cancel" id="btnConfirmCancel">取消</button>
+      <button type="button" class="btn-danger" id="btnConfirmDelete">确定删除</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ================= 元素 ================= */
+  var timerEl  = document.getElementById('timer');
+  var hintEl   = document.getElementById('hint');
+  var areaEl   = document.getElementById('timerArea');
+  var listEl   = document.getElementById('solves');
+  var elBest   = document.getElementById('best');
+  var elAo5    = document.getElementById('ao5');
+  var elAo12   = document.getElementById('ao12');
+  var elAllAvg = document.getElementById('allAvg');
+  var elCount  = document.getElementById('count');
+  var btnSettings  = document.getElementById('btnSettings');
+  var btnScr   = document.getElementById('btnScramble');
+  var scrambleEl = document.getElementById('scramble');
+  var toastEl  = document.getElementById('toast');
+
+  var overlay       = document.getElementById('settingsOverlay');
+  var btnCloseSet   = document.getElementById('btnCloseSettings');
+  var hideAllToggle = document.getElementById('hideAllToggle');
+  var obsToggle     = document.getElementById('obsToggle');
+  var voiceToggle   = document.getElementById('voiceToggle');
+  var hideTimeToggle = document.getElementById('hideTimeToggle');
+  
+  var volRange      = document.getElementById('volRange');
+  var volVal        = document.getElementById('volVal');
+  var btnResetVol   = document.getElementById('btnResetVol');
+
+  var scrambleSizeRange = document.getElementById('scrambleSizeRange');
+  var scrambleSizeVal   = document.getElementById('scrambleSizeVal');
+  var btnResetScrambleSize = document.getElementById('btnResetScrambleSize');
+
+  var segFont       = document.getElementById('segFont');
+  var themePicker   = document.getElementById('themePicker');
+  var btnClear      = document.getElementById('btnClear');
+
+  var btnGroups     = document.getElementById('btnGroups');
+  var groupBtnName  = document.getElementById('groupBtnName');
+  var btnPuzzle     = document.getElementById('btnPuzzle');
+
+  var btnMore             = document.getElementById('btnMore');
+  var moreSheetOverlay    = document.getElementById('moreSheetOverlay');
+  var btnMoreClose        = document.getElementById('btnMoreClose');
+  var btnMoreGroups       = document.getElementById('btnMoreGroups');
+  var btnMorePuzzle       = document.getElementById('btnMorePuzzle');
+  var moreGroupBtnName    = document.getElementById('moreGroupBtnName');
+
+  var postSolveActions = document.getElementById('postSolveActions');
+  var postActP2 = document.getElementById('postActP2');
+  var postActDnf = document.getElementById('postActDnf');
+  var postActDel = document.getElementById('postActDel');
+
+  var groupManageOverlay = document.getElementById('groupManageOverlay');
+  var btnCloseGroupManage = document.getElementById('btnCloseGroupManage');
+  var groupManageList = document.getElementById('groupManageList');
+  var btnNewGroup = document.getElementById('btnNewGroup');
+  var btnClearGroup = document.getElementById('btnClearGroup');
+  var groupNameOverlay = document.getElementById('groupNameOverlay');
+  var groupNameModalInput = document.getElementById('groupNameModalInput');
+  var btnGroupNameModalOk = document.getElementById('btnGroupNameModalOk');
+  var btnGroupNameModalCancel = document.getElementById('btnGroupNameModalCancel');
+
+  var confirmOverlay = document.getElementById('confirmOverlay');
+  var confirmDesc    = document.getElementById('confirmDesc');
+  var btnConfirmDel  = document.getElementById('btnConfirmDelete');
+  var btnConfirmCancel = document.getElementById('btnConfirmCancel');
+
+  var statsDetailOverlay = document.getElementById('statsDetailOverlay');
+  var statsDetailTitle   = document.getElementById('statsDetailTitle');
+  var statsDetailList    = document.getElementById('statsDetailList');
+  var btnCloseStatsDetail = document.getElementById('btnCloseStatsDetail');
+  
+  var solveDetailOverlay = document.getElementById('solveDetailOverlay');
+  var solveDetailBody    = document.getElementById('solveDetailBody');
+  var btnCloseSolveDetail = document.getElementById('btnCloseSolveDetail');
+  var btnCopySolveDetail  = document.getElementById('btnCopySolveDetail');
+  
+  var groupDetailOverlay = document.getElementById('groupDetailOverlay');
+  var groupDetailTitle   = document.getElementById('groupDetailTitle');
+  var groupDetailList    = document.getElementById('groupDetailList');
+  var btnCloseGroupDetail = document.getElementById('btnCloseGroupDetail');
+  var btnCopyGroupDetail  = document.getElementById('btnCopyGroupDetail');
+
+  var statPb  = document.getElementById('statPb');
+  var statAo5 = document.getElementById('statAo5');
+  var statAo12 = document.getElementById('statAo12');
+
+  var tabBtns  = Array.prototype.slice.call(document.querySelectorAll('.sheet-tab'));
+  var tabPanes = Array.prototype.slice.call(document.querySelectorAll('.tab-pane'));
+
+  var KEY = 'cube-timer-v1';
+
+  /* ================= 状态 ================= */
+  var DEFAULT_GROUP_ID = 'default';
+  var groups       = [{ id: DEFAULT_GROUP_ID, name: '默认分组', solves: [] }];
+  var currentGroupId = DEFAULT_GROUP_ID;
+  var renamingGroupId = null;  // 分组弹层里正在重命名的分组 id
+  var namingGroupId = null;    // 新建分组后命名弹窗对应的分组 id
+  var groupNamePrevId = null;  // 打开命名弹窗前所在的分组（取消时恢复）
+  var touchSwipe = null;       // 手机端上划/下滑手势状态
+  var isTouchPrimary = !!(window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches);
+  var activePointerId = null;  // 正在计时区域按住的触点，避免第二根手指或其它点击误触发松开
+  var groupPress = null;       // 当前按住的分组（鼠标拖动 / 触屏长按拖动）
+  var groupDragMoved = false;  // 拖动刚结束，忽略随之而来的点击
+  var groupDragResetTimer = 0;
+  var solves       = groups[0].solves;  // 当前分组的成绩数组（切换分组时替换引用）
+  var state       = 'idle';
+  var hideAllElements = true;
+  var obsEnabled  = false;
+  var hideTime    = false;
+  var fontStyle   = 'mono';
+  var theme       = 'light';
+  var voiceEnabled = false;
+  var voiceVolume = 80;
+  var scrambleSize = 50;
+  // 打乱图案大小固定为比原上限(100)略大，渲染时会自动收缩到图案框内避免溢出
+  var cubeSize     = 110;
+  
+  var obsActive   = false;
+  // 安卓返回键：观察 / 计时 / 各类弹层都压入一条历史记录，返回时只关闭最上层
+  var historyActions = [];
+  var ignorePopCount = 0;    // 主动 history.back() 时忽略对应次数的 popstate
+  var handlingPop = false;   // 正在处理系统返回，关闭函数不再重复调用 history.back()
+  var settingsOpen = false;
+  var moreOpen = false;
+  var postActionsShown = false;
+  var confirmOpen  = false;
+  var pendingDeleteIndex = null;
+
+  var timerStart  = 0;
+  var rafId       = 0;
+  var holdTimeout = 0;
+  var obsStart    = 0;
+  var obsTimer    = 0;
+  var holdTarget  = null;
+  var pendingPen  = 0;
+  var warn8Done   = false;
+  var warn12Done  = false;
+
+  var currentScramble = [];
+  var solveScramble = '';   // 本次计时开始时快照的打乱，避免计时途中被更换
+  var toastTimer  = 0;
+
+  var copySolveText = '';
+  var copyGroupText = '';
+
+  var currentStatsType = 'pb'; // 记录当前打开的统计面板类型
+
+  /* ================= 工具 ================= */
+  function fmt(ms) {
+    if (ms == null || !isFinite(ms)) return '—';
+    // 先四舍五入到百分之一秒再拆分，避免 59.999 秒显示成 60.00
+    var totalCs = Math.round(ms / 10);
+    var cs = totalCs % 100;
+    var totalSec = Math.floor(totalCs / 100);
+    var csStr = (cs < 10 ? '0' : '') + cs;
+    if (totalSec < 60) return totalSec + '.' + csStr;
+    var m = Math.floor(totalSec / 60);
+    var s = totalSec % 60;
+    return m + ':' + (s < 10 ? '0' : '') + s + '.' + csStr;
+  }
+
+  function effective(s) {
+    if (s.penalty === 2) return Infinity;
+    return s.time + (s.penalty === 1 ? 2000 : 0);
+  }
+
+  // 单个成绩的展示：+2 在时间后加 +；DNF 不带
+  function fmtSolve(s) {
+    if (s.penalty === 2) return 'DNF';
+    return fmt(effective(s)) + (s.penalty === 1 ? '+' : '');
+  }
+
+  function fmtSolveHtml(s) {
+    if (s.penalty === 2) return 'DNF';
+    return fmt(effective(s)) + (s.penalty === 1 ? '<span class="penalty-plus">+</span>' : '');
+  }
+
+  function formatDate(ts) {
+    var d = new Date(ts);
+    var y = d.getFullYear();
+    var m = ('0' + (d.getMonth() + 1)).slice(-2);
+    var day = ('0' + d.getDate()).slice(-2);
+    var h = ('0' + d.getHours()).slice(-2);
+    var min = ('0' + d.getMinutes()).slice(-2);
+    var sec = ('0' + d.getSeconds()).slice(-2);
+    return y + '-' + m + '-' + day + ' ' + h + ':' + min + ':' + sec;
+  }
+
+  function vibrate(ms) {
+    if (navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} }
+  }
+
+  function setTimerDisplay(txt) {
+    timerEl.textContent = txt;
+    // 末尾的 + 不参与大字号判断，避免 +2 成绩莫名其妙缩小
+    timerEl.classList.toggle('small', txt.replace(/\+$/, '').length > 5);
+  }
+
+  function isMobileLayout() {
+    return isTouchPrimary || window.innerWidth <= 768;
+  }
+
+  function setIdleHint() {
+    if (obsEnabled) {
+      hintEl.textContent = isTouchPrimary ? '按住后松开 · 进入观察' : '按住空格后松开进入观察';
+    } else {
+      hintEl.textContent = isTouchPrimary ? '按住屏幕 · 变绿后松开' : '按住不放 · 变绿后松开';
+    }
+    hintEl.style.color = '';
+  }
+
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 1600);
+  }
+
+  /* ================= 手机端计时结束后的成绩编辑 ================= */
+  function updatePostSolveActionsState() {
+    if (!postActionsShown) return;
+    var s = solves[0];
+    if (!s) { hidePostSolveActions(); return; }
+    postActP2.classList.toggle('active', s.penalty === 1);
+    postActDnf.classList.toggle('active', s.penalty === 2);
+  }
+
+  function showPostSolveActions() {
+    if (!isTouchPrimary || !solves.length) return;
+    postActionsShown = true;
+    postSolveActions.classList.add('show');
+    updatePostSolveActionsState();
+  }
+
+  function hidePostSolveActions() {
+    if (!postActionsShown) return;
+    postActionsShown = false;
+    postSolveActions.classList.remove('show');
+  }
+
+  function blurActive() {
+    try {
+      var el = document.activeElement;
+      if (el && el !== document.body && typeof el.blur === 'function') el.blur();
+    } catch (e) {}
+  }
+
+  function copyToClipboard(text, successMsg) {
+    function fallback() {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast(successMsg || '复制成功');
+      } catch (e) { showToast('复制失败'); }
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        showToast(successMsg || '复制成功');
+      }).catch(fallback);
+    } else {
+      fallback();
+    }
+  }
+
+  /* ================= 庆祝特效 ================= */
+  var cheerAudioCtx = null;
+  function playCheerSound() {
+    try {
+      var AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      // 复用同一个 AudioContext，避免每次 PB 都新建导致上下文数量超限
+      if (!cheerAudioCtx) cheerAudioCtx = new AudioCtx();
+      if (cheerAudioCtx.state === 'suspended' && cheerAudioCtx.resume) {
+        cheerAudioCtx.resume();
+      }
+      var ctx = cheerAudioCtx;
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+      osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1);
+      osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.2);
+      osc.frequency.setValueAtTime(1046.50, ctx.currentTime + 0.3);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.6);
+    } catch (e) {}
+  }
+
+  function showCelebration() {
+    var container = document.createElement('div');
+    container.className = 'celebration-container';
+    document.body.appendChild(container);
+    
+    var colors = ['#ff4d5e', '#5b8cff', '#2ee58a', '#ffd60a', '#bf5af2', '#ff9f0a'];
+    for (var i = 0; i < 60; i++) {
+      var el = document.createElement('div');
+      el.className = 'confetti';
+      el.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      el.style.left = Math.random() * 100 + 'vw';
+      el.style.animationDelay = (Math.random() * 0.3) + 's';
+      el.style.animationDuration = (1.5 + Math.random() * 1.5) + 's';
+      el.style.width = (5 + Math.random() * 8) + 'px';
+      el.style.height = (5 + Math.random() * 8) + 'px';
+      container.appendChild(el);
+    }
+    
+    setTimeout(function() {
+      if (container.parentNode) {
+        container.parentNode.removeChild(container);
+      }
+    }, 3000);
+  }
+
+  /* ================= 语音 ================= */
+  function getZhVoices() {
+    if (!('speechSynthesis' in window)) return [];
+    try {
+      var vs = speechSynthesis.getVoices() || [];
+      return vs.filter(function (v) {
+        return v && v.lang && v.lang.toLowerCase().indexOf('zh') === 0;
+      });
+    } catch (e) { return []; }
+  }
+
+  function pickZhVoice() {
+    var zh = getZhVoices();
+    if (!zh.length) return null;
+
+    var femaleKeys = ['huihui','yaoyao','xiaoxiao','xiaoyi','xiaohan','ting','mei','sin-ji','female','woman','女'];
+    for (var i = 0; i < zh.length; i++) {
+      var n = (zh[i].name || '').toLowerCase();
+      for (var j = 0; j < femaleKeys.length; j++) {
+        if (n.indexOf(femaleKeys[j]) >= 0) return zh[i];
+      }
+    }
+    return zh[0];
+  }
+
+  function cancelSpeech() {
+    if (!('speechSynthesis' in window)) return;
+    try { speechSynthesis.cancel(); } catch (e) {}
+  }
+
+  function speak(text) {
+    if (!voiceEnabled) return;
+    if (!('speechSynthesis' in window)) return;
+    try {
+      speechSynthesis.cancel();
+
+      var u = new SpeechSynthesisUtterance(text);
+      u.lang = 'zh-CN';
+      u.volume = Math.max(0.01, Math.min(1, voiceVolume / 100));
+      u.rate = 1.05;
+      u.pitch = 1.45; 
+
+      var v = pickZhVoice();
+      if (v) u.voice = v;
+
+      speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+
+  var speechPrimed = false;
+  function primeSpeech() {
+    if (speechPrimed) return;
+    speechPrimed = true;
+    if (!('speechSynthesis' in window)) return;
+    if (!voiceEnabled) return;
+    try {
+      var u = new SpeechSynthesisUtterance(' ');
+      u.lang = 'zh-CN';
+      u.volume = 0.01;
+      u.rate = 1;
+      speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+
+  /* ================= 主题 / 字体 ================= */
+  function applyTheme() {
+    document.documentElement.setAttribute('data-theme', theme);
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', theme === 'light' ? '#f2f2f7' : '#08080a');
+  }
+  function applyFont() {
+    document.documentElement.setAttribute('data-font', fontStyle);
+  }
+  
+  // 应用尺寸大小：按图案框实际空间自动缩放，确保六面完整显示
+  function applySizes() {
+    var isMobile = isMobileLayout();
+    var fs = (isMobile ? 12 : 14) + (scrambleSize / 100) * (isMobile ? 9 : 16);
+    document.documentElement.style.setProperty('--scramble-font-size', fs + 'px');
+
+    var minCell = isMobile ? 5 : 10;
+    var maxCell = isMobile ? 12 : 20;
+    var cs = minCell + (cubeSize / 100) * (maxCell - minCell);
+    var wrap = document.getElementById('cubePreview');
+
+    if (wrap) {
+      // 横向12格+14个间距，纵向9格+10个间距，预留安全边距
+      var safePad = isMobile ? 12 : 22;
+      var availableWidth = Math.max(0, wrap.clientWidth - safePad);
+      var availableHeight = Math.max(0, wrap.clientHeight - safePad);
+      var fitByWidth = availableWidth / (12 + 14 * 0.15);
+      var fitByHeight = availableHeight / (9 + 10 * 0.15);
+      var fitCell = Math.min(fitByWidth, fitByHeight);
+      if (isFinite(fitCell) && fitCell > 0) cs = Math.min(cs, fitCell);
+    }
+
+    cs = Math.max(1, cs);
+    var gap = Math.max(1, Math.floor(cs * 0.15));
+    document.documentElement.style.setProperty('--cube-cell-size', cs + 'px');
+    document.documentElement.style.setProperty('--cube-gap', gap + 'px');
+  }
+
+  function updateThemeButtons() {
+    Array.prototype.forEach.call(themePicker.querySelectorAll('.theme-btn'), function (el) {
+      el.classList.toggle('active', el.getAttribute('data-theme') === theme);
+    });
+  }
+  function updateFontButtons() {
+    Array.prototype.forEach.call(segFont.querySelectorAll('.seg-btn'), function (el) {
+      el.classList.toggle('active', el.getAttribute('data-font') === fontStyle);
+    });
+  }
+
+  /* ================= 魔方打乱图案算法 ================= */
+  // 使用统一的三维坐标计算贴纸位置，避免六个面的边条交换方向不一致。
+  var CUBE_FACE_DEFS = {
+    U: { n:[0,1,0], p:function(r,c){ return [c-1,1,r-1]; } },
+    D: { n:[0,-1,0], p:function(r,c){ return [c-1,-1,1-r]; } },
+    R: { n:[1,0,0], p:function(r,c){ return [1,1-r,1-c]; } },
+    L: { n:[-1,0,0], p:function(r,c){ return [-1,1-r,c-1]; } },
+    F: { n:[0,0,1], p:function(r,c){ return [c-1,1-r,1]; } },
+    B: { n:[0,0,-1], p:function(r,c){ return [1-c,1-r,-1]; } }
+  };
+
+  function cubeStickerKey(pos, normal) {
+    return normal.join(',') + '|' + pos.join(',');
+  }
+
+  function cubeRotateClockwise(v, axis) {
+    // 绕外法线顺时针旋转 90 度（右手定则的 -90 度）。
+    var cross = [
+      axis[1]*v[2] - axis[2]*v[1],
+      axis[2]*v[0] - axis[0]*v[2],
+      axis[0]*v[1] - axis[1]*v[0]
+    ];
+    var dot = axis[0]*v[0] + axis[1]*v[1] + axis[2]*v[2];
+    return [axis[0]*dot-cross[0], axis[1]*dot-cross[1], axis[2]*dot-cross[2]];
+  }
+
+  var CUBE_STICKER_LOOKUP = (function () {
+    var lookup = {};
+    Object.keys(CUBE_FACE_DEFS).forEach(function(face) {
+      var def = CUBE_FACE_DEFS[face];
+      for (var r=0; r<3; r++) for (var c=0; c<3; c++) {
+        lookup[cubeStickerKey(def.p(r,c), def.n)] = { face:face, index:r*3+c };
+      }
+    });
+    return lookup;
+  })();
+
+  function turnOnce(cube, base) {
+    var def = CUBE_FACE_DEFS[base];
+    if (!def) return;
+    var next = {
+      U:cube.U.slice(), R:cube.R.slice(), F:cube.F.slice(),
+      D:cube.D.slice(), L:cube.L.slice(), B:cube.B.slice()
+    };
+    Object.keys(CUBE_FACE_DEFS).forEach(function(face) {
+      var faceDef = CUBE_FACE_DEFS[face];
+      for (var r=0; r<3; r++) for (var c=0; c<3; c++) {
+        var index = r*3+c;
+        var pos = faceDef.p(r,c);
+        var normal = faceDef.n;
+        var value = cube[face][index];
+        var isLayer = pos[0]*def.n[0] + pos[1]*def.n[1] + pos[2]*def.n[2] === 1;
+        if (isLayer) {
+          pos = cubeRotateClockwise(pos, def.n);
+          normal = cubeRotateClockwise(normal, def.n);
+        }
+        var target = CUBE_STICKER_LOOKUP[cubeStickerKey(pos, normal)];
+        if (target) next[target.face][target.index] = value;
+      }
+    });
+    cube.U=next.U; cube.R=next.R; cube.F=next.F;
+    cube.D=next.D; cube.L=next.L; cube.B=next.B;
+  }
+
+  function computeCubeState(scrambleStr) {
+    var cube = {
+      U: ['w','w','w','w','w','w','w','w','w'],
+      R: ['r','r','r','r','r','r','r','r','r'],
+      F: ['g','g','g','g','g','g','g','g','g'],
+      D: ['y','y','y','y','y','y','y','y','y'],
+      L: ['o','o','o','o','o','o','o','o','o'],
+      B: ['b','b','b','b','b','b','b','b','b']
+    };
+
+    if (scrambleStr) {
+      var moves = scrambleStr.trim().split(/\s+/);
+      moves.forEach(function(mv) {
+        if (!mv) return;
+        var base = mv.charAt(0);
+        var mod = mv.slice(1);
+        var times = 1;
+        if (mod === "'") times = 3;
+        else if (mod === "2") times = 2;
+
+        for (var i = 0; i < times; i++) {
+          turnOnce(cube, base);
+        }
+      });
+    }
+    return cube;
+  }
+
+  function cubeFaceHtml(cube, face) {
+    var html = '';
+    for (var i = 0; i < 9; i++) {
+      html += '<div class="cube-cell cell-' + cube[face][i] + '"></div>';
+    }
+    return html;
+  }
+
+  function parseScrambleAndRender(scrambleStr) {
+    var cube = computeCubeState(scrambleStr);
+    var faces = ['U', 'R', 'F', 'D', 'L', 'B'];
+    faces.forEach(function(f) {
+      var el = document.getElementById('face-' + f);
+      if (!el) return;
+      el.innerHTML = cubeFaceHtml(cube, f);
+    });
+  }
+
+  // 把指定打乱渲染到详情弹层里的迷你魔方（按 data-face 查找六个面）
+  function renderCubeInto(container, scrambleStr) {
+    if (!container) return;
+    var cube = computeCubeState(scrambleStr);
+    ['U', 'R', 'F', 'D', 'L', 'B'].forEach(function(f) {
+      var el = container.querySelector('[data-face="' + f + '"]');
+      if (el) el.innerHTML = cubeFaceHtml(cube, f);
+    });
+  }
+
+  /* ================= 打乱 ================= */
+  var FACES  = ['U','D','L','R','F','B'];
+  var SUFFIX = ['', "'", '2'];
+  var AXIS   = { U:0, D:0, L:1, R:1, F:2, B:2 };
+
+  function validMove(face, seq) {
+    var n = seq.length;
+    if (n >= 1 && seq[n - 1] === face) return false;
+    if (n >= 2 && AXIS[seq[n - 1]] === AXIS[face] && AXIS[seq[n - 2]] === AXIS[face]) return false;
+    return true;
+  }
+
+  function generateScramble(len) {
+    var seq = [];
+    for (var i = 0; i < len; i++) {
+      var face, tries = 0;
+      do {
+        face = FACES[Math.floor(Math.random() * 6)];
+        tries++;
+        if (tries > 100) break;
+      } while (!validMove(face, seq));
+      seq.push(face);
+    }
+    var out = [];
+    for (var j = 0; j < seq.length; j++) {
+      out.push(seq[j] + SUFFIX[Math.floor(Math.random() * 3)]);
+    }
+    return out;
+  }
+
+  function renderScramble() {
+    var html = currentScramble.map(function (mv) {
+      var face = mv.charAt(0);
+      var sfx  = mv.slice(1);
+      return face + (sfx ? '<i>' + sfx + '</i>' : '');
+    }).join(' ');
+    scrambleEl.innerHTML = html;
+    
+    parseScrambleAndRender(currentScramble.join(' '));
+  }
+
+  function newScramble() {
+    if (state === 'running') return;
+    var len = 20 + Math.floor(Math.random() * 6);
+    currentScramble = generateScramble(len);
+    renderScramble();
+  }
+
+  function copyScramble() {
+    var text = currentScramble.join(' ');
+    copyToClipboard(text, '打乱已复制');
+  }
+
+  /* ================= 存储 ================= */
+  // 本地存储中的数据一律按不可信处理：只接受预期类型，并限制长度/范围
+  function normalizeSolve(s) {
+    if (!s || typeof s !== 'object') s = {};
+    var t = (typeof s.time === 'number' && isFinite(s.time) && s.time >= 0 && s.time <= 86400000) ? s.time : 0;
+    return {
+      time: t,
+      penalty: (s.penalty === 1 || s.penalty === 2) ? s.penalty : 0,
+      scramble: (typeof s.scramble === 'string' && s.scramble) ? s.scramble.slice(0, 200) : '暂无记录',
+      timestamp: (typeof s.timestamp === 'number' && isFinite(s.timestamp) && s.timestamp > 0) ? s.timestamp : Date.now(),
+      isPB: !!s.isPB
+    };
+  }
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (!raw) return;
+      var d = JSON.parse(raw);
+
+      var loadedGroups = [];
+      if (Array.isArray(d.groups)) {
+        d.groups.forEach(function (g) {
+          if (!g || typeof g.name !== 'string') return;
+          loadedGroups.push({
+            id: (typeof g.id === 'string' && g.id) ? g.id.slice(0, 80) : genGroupId(),
+            name: g.name.slice(0, 60) || '未命名分组',
+            solves: Array.isArray(g.solves) ? g.solves.map(normalizeSolve) : []
+          });
+        });
+      }
+
+      // 兼容旧版本：没有分组数据时，把顶层 solves 放进默认分组
+      if (!loadedGroups.length) {
+        loadedGroups.push({
+          id: DEFAULT_GROUP_ID,
+          name: '默认分组',
+          solves: Array.isArray(d.solves) ? d.solves.map(normalizeSolve) : []
+        });
+      }
+
+      // 默认分组始终存在
+      var hasDefault = false;
+      for (var gi = 0; gi < loadedGroups.length; gi++) {
+        if (loadedGroups[gi].id === DEFAULT_GROUP_ID) { hasDefault = true; break; }
+      }
+      if (!hasDefault) {
+        loadedGroups.unshift({ id: DEFAULT_GROUP_ID, name: '默认分组', solves: [] });
+      }
+
+      groups = loadedGroups;
+      currentGroupId = DEFAULT_GROUP_ID;
+      if (typeof d.currentGroupId === 'string') {
+        for (var gj = 0; gj < groups.length; gj++) {
+          if (groups[gj].id === d.currentGroupId) { currentGroupId = d.currentGroupId; break; }
+        }
+      }
+      solves = currentGroup().solves;
+
+      if (typeof d.hideAllElements === 'boolean') hideAllElements = d.hideAllElements;
+      obsEnabled = !!d.obsEnabled;
+      hideTime   = !!d.hideTime;
+      if (['mono', 'sans', 'serif', 'rounded'].indexOf(d.fontStyle) >= 0) fontStyle = d.fontStyle;
+      if (d.theme === 'light' || d.theme === 'dark') theme = d.theme;
+      voiceEnabled = !!d.voiceEnabled;
+      if (typeof d.voiceVolume === 'number' && d.voiceVolume >= 1 && d.voiceVolume <= 100) {
+        voiceVolume = Math.round(d.voiceVolume);
+      }
+      if (typeof d.scrambleSize === 'number') scrambleSize = d.scrambleSize;
+    } catch (e) {}
+  }
+
+  function refreshPBFlags() {
+    var best = Infinity;
+    // solves 按最新成绩在前排列；从最旧成绩往最新成绩重新计算历史 PB。
+    for (var i = solves.length - 1; i >= 0; i--) {
+      var t = effective(solves[i]);
+      solves[i].isPB = (t !== Infinity && t < best);
+      if (t < best) best = t;
+    }
+  }
+
+  function save() {
+    refreshPBFlags();
+    try {
+      localStorage.setItem(KEY, JSON.stringify({
+        groups: groups,
+        currentGroupId: currentGroupId,
+        hideAllElements: hideAllElements,
+        obsEnabled: obsEnabled,
+        hideTime: hideTime,
+        fontStyle: fontStyle,
+        theme: theme,
+        voiceEnabled: voiceEnabled,
+        voiceVolume: voiceVolume,
+        scrambleSize: scrambleSize
+      }));
+    } catch (e) {}
+  }
+
+  /* ================= 分组 ================= */
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function findGroup(id) {
+    for (var i = 0; i < groups.length; i++) {
+      if (groups[i].id === id) return groups[i];
+    }
+    return null;
+  }
+
+  function currentGroup() {
+    return findGroup(currentGroupId) || groups[0];
+  }
+
+  function genGroupId() {
+    return 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  }
+
+  var GRIP_SVG = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle></svg>';
+  var EDIT_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>';
+  var TRASH_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path></svg>';
+
+  function refreshGroupUI() {
+    var g = currentGroup();
+    if (!g) return;
+    groupBtnName.textContent = g.name;
+    if (moreGroupBtnName) moreGroupBtnName.textContent = g.name;
+  }
+
+  function renderGroupManage() {
+    var html = '';
+    groups.forEach(function (g) {
+      var isActive = g.id === currentGroupId;
+      if (g.id === renamingGroupId) {
+        html += '<li class="group-manage-item' + (isActive ? ' active' : '') + '" data-gid="' + escapeHtml(g.id) + '">' +
+                  '<span class="gm-drag" title="拖动排序">' + GRIP_SVG + '</span>' +
+                  '<input type="text" class="gm-name-input" data-edit-input="' + escapeHtml(g.id) + '" maxlength="24" value="' + escapeHtml(g.name) + '">' +
+                  '<button type="button" class="gm-save-btn" data-confirm="' + escapeHtml(g.id) + '">确认</button>' +
+                  '<button type="button" class="gm-save-btn ghost" data-cancel="' + escapeHtml(g.id) + '">取消</button>' +
+                '</li>';
+      } else {
+        html += '<li class="group-manage-item' + (isActive ? ' active' : '') + '" data-gid="' + escapeHtml(g.id) + '">' +
+                  '<span class="gm-drag" title="拖动排序">' + GRIP_SVG + '</span>' +
+                  '<span class="gm-name">' + escapeHtml(g.name) + '</span>' +
+                  '<div class="gm-actions">' +
+                    '<button type="button" class="act-btn gm-act" data-rename="' + escapeHtml(g.id) + '" title="重命名" aria-label="重命名">' + EDIT_SVG + '</button>' +
+                    (g.id === DEFAULT_GROUP_ID ? '' : '<button type="button" class="act-btn gm-act gm-del" data-del="' + escapeHtml(g.id) + '" title="删除分组" aria-label="删除分组">' + TRASH_SVG + '</button>') +
+                  '</div>' +
+                '</li>';
+      }
+    });
+    groupManageList.innerHTML = html;
+  }
+
+  function openGroupManage() {
+    if (state !== 'idle') { showToast('请先停止计时'); return; }
+    var wasOpen = groupManageOverlay.classList.contains('show');
+    renamingGroupId = null;
+    renderGroupManage();
+    groupManageOverlay.classList.add('show');
+    if (!wasOpen) pushHistory('groupmanage');
+    blurActive();
+  }
+
+  function closeGroupManage() {
+    var wasOpen = groupManageOverlay.classList.contains('show');
+    groupManageOverlay.classList.remove('show');
+    renamingGroupId = null;
+    if (wasOpen) releaseHistory();
+    blurActive();
+  }
+
+  function selectGroup(id) {
+    if (state !== 'idle') { showToast('请先停止计时'); return; }
+    var g = findGroup(id);
+    if (!g) return;
+    hidePostSolveActions();
+    currentGroupId = g.id;
+    solves = g.solves;
+    save();
+    render();
+    refreshGroupUI();
+    closeGroupManage();
+    showToast('已切换到：' + g.name);
+  }
+
+  function createGroup() {
+    if (state !== 'idle') { showToast('请先停止计时'); return; }
+    hidePostSolveActions();
+    var prevId = currentGroupId;
+    var ng = { id: genGroupId(), name: '新建分组', solves: [] };
+    groups.push(ng);
+    currentGroupId = ng.id;
+    solves = ng.solves;
+    renamingGroupId = null;
+    save();
+    render();
+    refreshGroupUI();
+    renderGroupManage();
+    openGroupNameModal(ng.id, prevId);
+  }
+
+  function openGroupNameModal(groupId, prevGroupId) {
+    var g = findGroup(groupId);
+    if (!g) return;
+    var wasOpen = groupNameOverlay.classList.contains('show');
+    namingGroupId = groupId;
+    groupNamePrevId = prevGroupId || currentGroupId;
+    groupNameModalInput.value = g.name;
+    groupNameOverlay.classList.add('show');
+    if (!wasOpen) pushHistory('groupname');
+    // 手机端不自动聚焦，避免键盘弹出后第一次返回只收起键盘
+    if (!isTouchPrimary) {
+      setTimeout(function () {
+        groupNameModalInput.focus();
+        groupNameModalInput.select();
+      }, 50);
+    }
+  }
+
+  function hideGroupNameModal() {
+    var wasOpen = groupNameOverlay.classList.contains('show');
+    groupNameOverlay.classList.remove('show');
+    namingGroupId = null;
+    groupNamePrevId = null;
+    if (wasOpen) releaseHistory();
+    blurActive();
+  }
+
+  // 取消命名 = 撤销这次新建，并回到之前所在的分组
+  function cancelGroupNameModal() {
+    var gid = namingGroupId;
+    if (gid) {
+      var g = findGroup(gid);
+      if (g) {
+        var idx = groups.indexOf(g);
+        if (idx >= 0) groups.splice(idx, 1);
+      }
+      if (currentGroupId === gid) {
+        var prev = groupNamePrevId ? findGroup(groupNamePrevId) : null;
+        var dg = prev || findGroup(DEFAULT_GROUP_ID) || groups[0];
+        currentGroupId = dg.id;
+        solves = dg.solves;
+      }
+      save();
+      render();
+      refreshGroupUI();
+      renderGroupManage();
+    }
+    hideGroupNameModal();
+  }
+
+  function submitGroupNameModal() {
+    var g = namingGroupId ? findGroup(namingGroupId) : null;
+    if (g) {
+      var name = (groupNameModalInput.value || '').replace(/\s+/g, ' ').trim();
+      if (name && name !== g.name) {
+        g.name = name;
+        save();
+        refreshGroupUI();
+        renderGroupManage();
+        showToast('分组名称已修改');
+      }
+    }
+    hideGroupNameModal();
+  }
+
+  function startGroupRename(id) {
+    if (!findGroup(id)) return;
+    renamingGroupId = id;
+    renderGroupManage();
+    var input = groupManageList.querySelector('.gm-name-input');
+    if (input) { input.focus(); input.select(); }
+  }
+
+  function confirmGroupRename(id, inputEl) {
+    var g = findGroup(id);
+    if (!g) return;
+    var input = inputEl || groupManageList.querySelector('.gm-name-input');
+    var name = input ? input.value.replace(/\s+/g, ' ').trim() : '';
+    if (!name) {
+      showToast('分组名称不能为空');
+      if (input) input.focus();
+      return;
+    }
+    g.name = name;
+    renamingGroupId = null;
+    save();
+    refreshGroupUI();
+    renderGroupManage();
+    blurActive();
+    showToast('分组名称已修改');
+  }
+
+  function deleteGroup(id) {
+    if (id === DEFAULT_GROUP_ID) { showToast('默认分组不能删除'); return; }
+    var g = findGroup(id);
+    if (!g) return;
+    if (state !== 'idle') { showToast('请先停止计时'); return; }
+    var msg = '确定删除分组「' + g.name + '」吗？' +
+              (g.solves.length ? '组内 ' + g.solves.length + ' 条成绩会一起删除。' : '') +
+              '此操作不可恢复。';
+    if (!confirm(msg)) return;
+
+    var idx = groups.indexOf(g);
+    if (idx >= 0) groups.splice(idx, 1);
+
+    if (currentGroupId === id) {
+      var dg = findGroup(DEFAULT_GROUP_ID) || groups[0];
+      currentGroupId = dg.id;
+      solves = dg.solves;
+      render();
+      refreshGroupUI();
+    }
+
+    renamingGroupId = null;
+    save();
+    renderGroupManage();
+    showToast('已删除分组');
+  }
+
+  function clearCurrentGroupSolves() {
+    if (state !== 'idle') { showToast('请先停止计时'); return; }
+    var g = currentGroup();
+    if (!g) return;
+    if (!g.solves.length) { showToast('当前分组暂无成绩'); return; }
+    if (!confirm('确定清空「' + g.name + '」分组的全部成绩吗？此操作不可恢复。')) return;
+    hidePostSolveActions();
+    g.solves.length = 0;
+    solves = g.solves;
+    save();
+    render();
+    renderGroupManage();
+    showToast('已清空当前分组成绩');
+  }
+
+  function syncGroupOrderFromDom() {
+    var order = Array.prototype.map.call(
+      groupManageList.querySelectorAll('.group-manage-item'),
+      function (li) { return li.getAttribute('data-gid'); }
+    );
+    var ordered = [];
+    order.forEach(function (gid) {
+      var g = findGroup(gid);
+      if (g && ordered.indexOf(g) < 0) ordered.push(g);
+    });
+    groups.forEach(function (g) {
+      if (ordered.indexOf(g) < 0) ordered.push(g);
+    });
+    groups = ordered;
+    save();
+  }
+
+  function activateGroupPress() {
+    if (!groupPress) return;
+    groupPress.active = true;
+    clearTimeout(groupPress.timer);
+    groupPress.li.classList.add('dragging');
+    try { groupPress.li.setPointerCapture(groupPress.pointerId); } catch (e) {}
+    vibrate(10);
+  }
+
+  function reorderGroupByPointer(clientY) {
+    if (!groupPress) return;
+    var items = Array.prototype.slice.call(groupManageList.querySelectorAll('.group-manage-item'));
+    var target = null;
+    for (var i = 0; i < items.length; i++) {
+      var r = items[i].getBoundingClientRect();
+      if (clientY >= r.top && clientY <= r.bottom) { target = items[i]; break; }
+    }
+    if (!target || target === groupPress.li) return;
+    var rectTarget = target.getBoundingClientRect();
+    var rectDrag = groupPress.li.getBoundingClientRect();
+    if (rectDrag.top < rectTarget.top) {
+      groupManageList.insertBefore(groupPress.li, target.nextSibling);
+    } else {
+      groupManageList.insertBefore(groupPress.li, target);
+    }
+    groupPress.reordered = true;
+  }
+
+  function endGroupPress() {
+    if (!groupPress) return;
+    var p = groupPress;
+    groupPress = null;
+    clearTimeout(p.timer);
+    p.li.classList.remove('dragging');
+    try { p.li.releasePointerCapture(p.pointerId); } catch (e) {}
+    if (p.active && p.reordered) {
+      syncGroupOrderFromDom();
+    }
+    if (p.reordered) {
+      // 拖动结束后浏览器仍会补发一次 click，先忽略它；稍后自动清除，避免吞掉下一次正常点击
+      groupDragMoved = true;
+      clearTimeout(groupDragResetTimer);
+      groupDragResetTimer = setTimeout(function () { groupDragMoved = false; }, 400);
+    }
+  }
+
+  /* ================= 统计 ================= */
+  function bestTime() {
+    var best = Infinity;
+    for (var i = 0; i < solves.length; i++) {
+      var t = effective(solves[i]);
+      if (t < best) best = t;
+    }
+    return isFinite(best) ? best : null;
+  }
+
+  // 当前分组所有（非 DNF）成绩的平均
+  function meanAll() {
+    var sum = 0, count = 0;
+    for (var i = 0; i < solves.length; i++) {
+      var t = effective(solves[i]);
+      if (isFinite(t)) { sum += t; count++; }
+    }
+    return count ? (sum / count) : null;
+  }
+
+  function averageOf(n) {
+    if (solves.length < n) return null;
+    var vals = solves.slice(0, n).map(effective);
+    var dnf = 0, i;
+    for (i = 0; i < vals.length; i++) if (vals[i] === Infinity) dnf++;
+    if (dnf >= 2) return 'DNF';
+    vals.sort(function (a, b) { return a - b; });
+    var trimmed = vals.slice(1, vals.length - 1);
+    var sum = 0;
+    for (i = 0; i < trimmed.length; i++) {
+      if (trimmed[i] === Infinity) return 'DNF';
+      sum += trimmed[i];
+    }
+    return sum / trimmed.length;
+  }
+
+  function averageOfSlice(arr) {
+    var vals = arr.map(effective);
+    var dnf = 0, i;
+    for (i = 0; i < vals.length; i++) if (vals[i] === Infinity) dnf++;
+    if (dnf >= 2) return 'DNF';
+    vals.sort(function (a, b) { return a - b; });
+    var trimmed = vals.slice(1, vals.length - 1);
+    var sum = 0;
+    for (i = 0; i < trimmed.length; i++) {
+      if (trimmed[i] === Infinity) return 'DNF';
+      sum += trimmed[i];
+    }
+    return sum / trimmed.length;
+  }
+
+  /* ================= 渲染 ================= */
+  function render() {
+    var b = bestTime();
+    elBest.textContent = (b === null) ? '—' : fmt(b);
+
+    var allAvg = meanAll();
+    elAllAvg.textContent = (allAvg === null) ? '—' : fmt(allAvg);
+
+    var a5 = averageOf(5);
+    elAo5.textContent = (a5 === null) ? '—' : (a5 === 'DNF' ? 'DNF' : fmt(a5));
+
+    var a12 = averageOf(12);
+    elAo12.textContent = (a12 === null) ? '—' : (a12 === 'DNF' ? 'DNF' : fmt(a12));
+
+    elCount.textContent = solves.length;
+
+    if (!solves.length) {
+      listEl.innerHTML = '<li class="empty"><span class="empty-title">暂无成绩</span><span class="empty-sub">完成一次还原后会显示在这里</span></li>';
+    } else {
+      var html = '';
+      for (var i = 0; i < solves.length; i++) {
+        var s = solves[i];
+        var timeHtml = '';
+        if (s.penalty === 2) {
+          timeHtml = 'DNF <span class="raw-t">(' + fmt(s.time) + ')</span>';
+        } else {
+          timeHtml = fmtSolveHtml(s);
+        }
+        
+        var liClass = 'solve';
+        if (s.penalty === 2) liClass += ' dnf';
+        if (s.isPB) liClass += ' pb';
+
+        html += '<li class="' + liClass + '" data-i="' + i + '">' +
+                  '<span class="idx">' + (solves.length - i) + '.</span>' +
+                  '<span class="time">' + timeHtml + '</span>' +
+                  '<div class="solve-actions">' +
+                    '<button class="act-btn p2' + (s.penalty === 1 ? ' active' : '') + '" data-act="p2">+2</button>' +
+                    '<button class="act-btn dnf' + (s.penalty === 2 ? ' active' : '') + '" data-act="dnf">DNF</button>' +
+                    '<button class="act-btn del" data-act="del">×</button>' +
+                  '</div>' +
+                '</li>';
+      }
+      listEl.innerHTML = html;
+    }
+    updatePostSolveActionsState();
+  }
+
+  /* ================= 计时循环 ================= */
+  function tick() {
+    if (!hideTime) {
+      setTimerDisplay(fmt(performance.now() - timerStart));
+    }
+    rafId = requestAnimationFrame(tick);
+  }
+
+  /* ================= 观察 ================= */
+  function updateObserve() {
+    var sec = (performance.now() - obsStart) / 1000;
+    var displaySec = Math.floor(sec);
+
+    if (!warn8Done && sec >= 8) {
+      warn8Done = true;
+      speak('八秒');
+    }
+    if (!warn12Done && sec >= 12) {
+      warn12Done = true;
+      speak('十二秒');
+    }
+
+    if (state === 'holding' || state === 'ready') {
+      return;
+    }
+
+    if (sec > 17) {
+      setTimerDisplay('DNF');
+      timerEl.classList.add('warn');
+      hintEl.textContent = '观察超时 · 将记录 DNF';
+      hintEl.style.color = 'var(--red)';
+    } else if (sec >= 15) {
+      setTimerDisplay('+2');
+      timerEl.classList.add('warn');
+      hintEl.textContent = '观察超时 · 将记录 +2';
+      hintEl.style.color = 'var(--red)';
+    } else {
+      setTimerDisplay(String(displaySec));
+      timerEl.classList.toggle('warn', displaySec >= 13);
+      hintEl.textContent = isTouchPrimary
+        ? '观察中 · 按住屏幕变绿后松开开始计时'
+        : '观察中 · 按住空格变绿后松开开始计时';
+      hintEl.style.color = '';
+    }
+  }
+
+  // 压入一条历史记录，让安卓返回键（以及 iOS 侧滑返回）能退出当前阶段/弹层
+  function pushHistory(action) {
+    var top = historyActions.length ? historyActions[historyActions.length - 1] : null;
+    // 观察结束后开始计时，只把同一条记录从上一步更新为计时，避免返回键需要按两次
+    if (action === 'run' && top === 'observe') {
+      historyActions[historyActions.length - 1] = 'run';
+      return;
+    }
+    try {
+      history.pushState({ cubeTimer: action }, '');
+      historyActions.push(action);
+    } catch (e) {}
+  }
+
+  function releaseHistory() {
+    if (handlingPop) return;
+    if (!historyActions.length) return;
+    historyActions.pop();
+    ignorePopCount++;
+    try {
+      history.back();
+    } catch (e) {
+      ignorePopCount = Math.max(0, ignorePopCount - 1);
+    }
+  }
+
+  function startObserve() {
+    stopObserve();
+    state = 'observing';
+    obsActive = true;
+    pushHistory('observe');
+    obsStart = performance.now();
+    warn8Done = false;
+    warn12Done = false;
+    areaEl.classList.remove('holding', 'ready');
+    timerEl.classList.remove('warn');
+    
+    // 观察阶段隐藏
+    if (hideAllElements) {
+      document.body.classList.add('hide-all');
+    }
+
+    updateObserve();
+    obsTimer = setInterval(updateObserve, 100);
+    vibrate(15);
+  }
+
+  function stopObserve() {
+    if (obsTimer) { clearInterval(obsTimer); obsTimer = 0; }
+  }
+
+  /* ================= 状态机 ================= */
+  function clearHoldUI() {
+    clearTimeout(holdTimeout);
+    areaEl.classList.remove('holding', 'ready');
+  }
+
+  function beginHold() {
+    if (!obsActive) pendingPen = 0;
+
+    state = 'holding';
+    areaEl.classList.add('holding');
+    setTimerDisplay('0.00');
+    timerEl.classList.remove('warn');
+    hintEl.textContent = '松开开始计时';
+    hintEl.style.color = '';
+
+    // 按住空格键准备开始时，隐藏计时器周边的所有界面元素。
+    document.body.classList.add('hide-all');
+
+    holdTimeout = setTimeout(function () {
+      if (state === 'holding') {
+        state = 'ready';
+        areaEl.classList.remove('holding');
+        areaEl.classList.add('ready');
+        vibrate(10);
+      }
+    }, 300);
+  }
+
+  // WCA 观察：按下时只做预备，数字直接变绿，松开后才真正开始 15 秒倒计时
+  function beginObserveHold() {
+    pendingPen = 0;
+    state = 'obsHold';
+    areaEl.classList.remove('holding');
+    areaEl.classList.add('ready');
+    setTimerDisplay('0.00');
+    timerEl.classList.remove('warn');
+    hintEl.textContent = '松开开始观察';
+    hintEl.style.color = '';
+  }
+
+  function startTimer() {
+    if (obsActive) {
+      var sec = (performance.now() - obsStart) / 1000;
+      pendingPen = sec > 17 ? 2 : (sec > 15 ? 1 : 0);
+      obsActive = false;
+    }
+    stopObserve();
+    cancelSpeech();
+    pushHistory('run');
+
+    state = 'running';
+    areaEl.classList.remove('holding', 'ready');
+    timerEl.classList.remove('warn');
+    hintEl.textContent = '';
+    hintEl.style.color = '';
+    timerStart = performance.now();
+    solveScramble = currentScramble.join(' ');
+
+    document.body.classList.toggle('hide-all', hideAllElements);
+
+    if (hideTime) {
+      setTimerDisplay('还原');
+    }
+    rafId = requestAnimationFrame(tick);
+    vibrate(20);
+  }
+
+  function stopTimer() {
+    cancelAnimationFrame(rafId);
+    rafId = 0;
+    var elapsed = performance.now() - timerStart;
+    state = 'idle';
+    areaEl.classList.remove('holding', 'ready');
+    timerEl.classList.remove('warn');
+
+    document.body.classList.remove('hide-all');
+
+    var s = { 
+      time: elapsed, 
+      penalty: pendingPen || 0,
+      scramble: solveScramble,
+      timestamp: Date.now(),
+      isPB: false
+    };
+    
+    var oldBest = bestTime();
+    if (s.penalty !== 2) {
+      var curTime = effective(s);
+      if (oldBest === null || curTime < oldBest) {
+        s.isPB = true;
+      }
+    }
+
+    pendingPen = 0;
+    obsActive = false;
+    stopObserve();
+    cancelSpeech();
+    releaseHistory();
+
+    solves.unshift(s);
+    save();
+    render();
+    // 无论计时前成绩列表滚到哪里，结束后都回到最新一条
+    listEl.scrollTop = 0;
+
+    setTimerDisplay(fmtSolve(s));
+    setIdleHint();
+    newScramble();
+    vibrate(12);
+    showPostSolveActions();
+
+    if (s.isPB) {
+      playCheerSound();
+      showCelebration();
+    }
+  }
+
+  // 取消本次计时：停止但不保存成绩（Esc 键 / 手机返回键）
+  function cancelTiming() {
+    cancelAnimationFrame(rafId);
+    rafId = 0;
+    state = 'idle';
+    areaEl.classList.remove('holding', 'ready');
+    timerEl.classList.remove('warn');
+    document.body.classList.remove('hide-all');
+    pendingPen = 0;
+    obsActive = false;
+    stopObserve();
+    cancelSpeech();
+    releaseHistory();
+    setTimerDisplay('0.00');
+    setIdleHint();
+    vibrate(10);
+    showToast('已取消本次计时');
+  }
+
+  function press() {
+    if (confirmOpen || moreOpen) return;
+    if (state === 'running') { stopTimer(); return; }
+    if (settingsOpen) return;
+    if (state === 'holding' || state === 'ready' || state === 'obsHold') return;
+
+    primeSpeech();
+    hidePostSolveActions();
+
+    if (state === 'idle') {
+      if (obsEnabled) {
+        holdTarget = 'observe';
+        beginObserveHold();
+      } else {
+        holdTarget = 'run';
+        beginHold();
+      }
+    } else if (state === 'observing') {
+      holdTarget = 'run';
+      beginHold();
+    }
+  }
+
+  function release() {
+    if (confirmOpen || moreOpen) return;
+    if (settingsOpen) return;
+
+    if (state === 'ready') {
+      clearHoldUI();
+      holdTarget = null;
+      startTimer();
+    } else if (state === 'holding') {
+      clearHoldUI();
+      if (holdTarget === 'run' && obsActive) {
+        state = 'observing';
+        document.body.classList.toggle('hide-all', hideAllElements);
+        timerEl.classList.remove('warn');
+        updateObserve();
+      } else {
+        state = 'idle';
+        setTimerDisplay('0.00');
+        timerEl.classList.remove('warn');
+        setIdleHint();
+        document.body.classList.remove('hide-all');
+      }
+      holdTarget = null;
+    } else if (state === 'obsHold') {
+      var startObs = holdTarget === 'observe';
+      clearHoldUI();
+      holdTarget = null;
+      if (startObs) {
+        startObserve();
+      } else {
+        state = 'idle';
+        setTimerDisplay('0.00');
+        setIdleHint();
+      }
+    }
+  }
+
+  function cancelHold() {
+    if (state === 'obsHold') {
+      clearHoldUI();
+      state = 'idle';
+      setTimerDisplay('0.00');
+      setIdleHint();
+      document.body.classList.remove('hide-all');
+      holdTarget = null;
+      return;
+    }
+    if (state === 'holding' || state === 'ready') {
+      clearHoldUI();
+      if (holdTarget === 'run' && obsActive) {
+        state = 'observing';
+        document.body.classList.toggle('hide-all', hideAllElements);
+        timerEl.classList.remove('warn');
+        updateObserve();
+      } else {
+        state = 'idle';
+        setTimerDisplay('0.00');
+        timerEl.classList.remove('warn');
+        setIdleHint();
+        document.body.classList.remove('hide-all');
+      }
+      holdTarget = null;
+    }
+  }
+
+  function cancelObserve(skipHistoryRelease) {
+    stopObserve();
+    cancelSpeech();
+    clearHoldUI();
+    holdTarget = null;
+    obsActive = false;
+    state = 'idle';
+    timerEl.classList.remove('warn');
+    setTimerDisplay('0.00');
+    setIdleHint();
+    document.body.classList.remove('hide-all');
+    if (!skipHistoryRelease) releaseHistory();
+  }
+
+  // 手指滑动时取消当前的按住/观察，回到空闲
+  function cancelActivePress() {
+    if (obsActive) {
+      cancelObserve();
+      return;
+    }
+    if (state === 'holding' || state === 'ready' || state === 'obsHold') {
+      clearHoldUI();
+      state = 'idle';
+      setTimerDisplay('0.00');
+      timerEl.classList.remove('warn');
+      setIdleHint();
+      document.body.classList.remove('hide-all');
+      holdTarget = null;
+    }
+  }
+
+  /* ================= “更多”抽屉 ================= */
+  function openMoreSheet() {
+    if (moreOpen) return;
+    if (state !== 'idle') { showToast('请先停止计时'); return; }
+    moreOpen = true;
+    moreSheetOverlay.classList.add('show');
+    pushHistory('more');
+    blurActive();
+  }
+
+  function closeMoreSheet() {
+    if (!moreOpen) return;
+    moreOpen = false;
+    moreSheetOverlay.classList.remove('show');
+    releaseHistory();
+    blurActive();
+  }
+
+  /* ================= 设置抽屉控制 ================= */
+  function openSettings() {
+    if (settingsOpen) return;
+    if (state === 'running') { showToast('请先停止计时'); return; }
+    var reuseHistory = false;
+    if (state === 'holding' || state === 'ready' || state === 'obsHold') {
+      clearHoldUI();
+      state = 'idle';
+      setTimerDisplay('0.00');
+      timerEl.classList.remove('warn');
+      setIdleHint();
+      holdTarget = null;
+    } else if (state === 'observing') {
+      // 观察阶段自带一条历史记录，直接把它改成设置，避免连续 history.back / push 的时序问题
+      reuseHistory = historyActions.length > 0 &&
+        historyActions[historyActions.length - 1] === 'observe';
+      cancelObserve(reuseHistory);
+    }
+    settingsOpen = true;
+    overlay.classList.add('show');
+    if (reuseHistory) {
+      historyActions[historyActions.length - 1] = 'settings';
+    } else {
+      pushHistory('settings');
+    }
+  }
+
+  function closeSettings() {
+    if (!settingsOpen) return;
+    settingsOpen = false;
+    overlay.classList.remove('show');
+    releaseHistory();
+    blurActive();
+  }
+
+  function switchTab(name) {
+    tabBtns.forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-tab') === name);
+    });
+    tabPanes.forEach(function (p) {
+      p.classList.toggle('active', p.getAttribute('data-pane') === name);
+    });
+  }
+
+  /* ================= 详情面板 ================= */
+  function openSolveDetail(index) {
+    if (state !== 'idle') { showToast('请先停止计时'); return; }
+    var s = solves[index];
+    if (!s) return;
+
+    var timeStr = s.penalty === 2 ? 'DNF (' + fmt(s.time) + ')' : fmtSolve(s);
+    var dateStr = formatDate(s.timestamp);
+    var wasOpen = solveDetailOverlay.classList.contains('show');
+    var showPattern = isTouchPrimary && s.scramble && s.scramble !== '暂无记录';
+
+    var patternHtml = '';
+    if (showPattern) {
+      patternHtml =
+        '<div class="detail-row detail-cube-row">' +
+          '<span class="detail-label">打乱图案</span>' +
+          '<div class="detail-cube-wrap" id="solveDetailCube">' +
+            '<div class="cube-face face-U" data-face="U"></div>' +
+            '<div class="cube-face face-L" data-face="L"></div>' +
+            '<div class="cube-face face-F" data-face="F"></div>' +
+            '<div class="cube-face face-R" data-face="R"></div>' +
+            '<div class="cube-face face-B" data-face="B"></div>' +
+            '<div class="cube-face face-D" data-face="D"></div>' +
+          '</div>' +
+        '</div>';
+    }
+
+    solveDetailBody.innerHTML =
+      '<div class="detail-row"><span class="detail-label">成绩</span><span class="detail-val">' + timeStr + '</span></div>' +
+      '<div class="detail-row"><span class="detail-label">打乱公式</span><span class="detail-val scramble">' + escapeHtml(s.scramble) + '</span></div>' +
+      patternHtml +
+      '<div class="detail-row"><span class="detail-label">还原日期</span><span class="detail-val">' + dateStr + '</span></div>';
+
+    if (showPattern) renderCubeInto(document.getElementById('solveDetailCube'), s.scramble);
+
+    copySolveText = '成绩: ' + timeStr + '\n打乱: ' + s.scramble + '\n日期: ' + dateStr;
+    solveDetailOverlay.classList.add('show');
+    if (!wasOpen) pushHistory('solve');
+  }
+
+  function openGroupDetail(slice, title) {
+    if (state !== 'idle') { showToast('请先停止计时'); return; }
+    groupDetailTitle.textContent = title;
+    var html = '';
+    var copyText = '';
+    var wasOpen = groupDetailOverlay.classList.contains('show');
+
+    var sortedSlice = slice.slice().reverse();
+    
+    sortedSlice.forEach(function(s, idx) {
+      var timeStr = s.penalty === 2 ? 'DNF (' + fmt(s.time) + ')' : fmtSolve(s);
+      var dateStr = formatDate(s.timestamp);
+      
+      html += '<li class="group-detail-item">' +
+                '<div class="gd-top">' +
+                  '<span class="gd-idx">#' + (idx + 1) + '</span>' +
+                  '<span class="gd-time">' + timeStr + '</span>' +
+                '</div>' +
+                '<div class="gd-scramble">' + escapeHtml(s.scramble) + '</div>' +
+                '<div class="gd-date">' + dateStr + '</div>' +
+              '</li>';
+              
+      copyText += '[' + (idx + 1) + '] 成绩: ' + timeStr + ' | 打乱: ' + s.scramble + ' | 日期: ' + dateStr + '\n';
+    });
+
+    groupDetailList.innerHTML = html;
+    copyGroupText = copyText;
+    groupDetailOverlay.classList.add('show');
+    if (!wasOpen) pushHistory('groupdetail');
+  }
+
+  function closeSolveDetail() {
+    var wasOpen = solveDetailOverlay.classList.contains('show');
+    solveDetailOverlay.classList.remove('show');
+    if (wasOpen) releaseHistory();
+  }
+  function closeGroupDetail() {
+    var wasOpen = groupDetailOverlay.classList.contains('show');
+    groupDetailOverlay.classList.remove('show');
+    if (wasOpen) releaseHistory();
+  }
+
+  /* ================= 成绩历史排行 ================= */
+  var statsDetailData = [];
+
+  function showStatsDetail(type) {
+    if (state !== 'idle') { showToast('请先停止计时'); return; }
+    if (solves.length === 0) {
+      statsDetailData = [];
+      statsDetailList.innerHTML = '<li class="empty">暂无成绩</li>';
+      closeStatsDetail();
+      showToast('暂无成绩');
+      return;
+    }
+
+    var wasOpen = statsDetailOverlay.classList.contains('show');
+    currentStatsType = type;
+    var title = '';
+    statsDetailData = [];
+
+    if (type === 'pb') {
+      title = '单次 PB 历史';
+      var rawData = [];
+      solves.forEach(function (s, idx) {
+        // DNF 也保留在列表里（排最后），方便在这里点 DNF 撤销回来
+        rawData.push({
+          val: s.penalty === 2 ? Infinity : effective(s),
+          origIndex: idx,
+          date: s.timestamp,
+          penalty: s.penalty
+        });
+      });
+      rawData.sort(function (a, b) {
+        if (a.val === b.val) return 0;
+        return a.val < b.val ? -1 : 1;
+      });
+      statsDetailData = rawData;
+    } else if (type === 'ao5') {
+      title = 'ao5 历史';
+      var n = 5;
+      if (solves.length >= n) {
+        var rawData = [];
+        for (var i = 0; i <= solves.length - n; i++) {
+          var slice = solves.slice(i, i + n);
+          var avg = averageOfSlice(slice);
+          if (avg !== 'DNF' && isFinite(avg)) {
+            rawData.push({ val: avg, raw: slice, date: slice[0].timestamp });
+          }
+        }
+        rawData.sort(function (a, b) { return a.val - b.val; });
+        statsDetailData = rawData;
+      }
+    } else if (type === 'ao12') {
+      title = 'ao12 历史';
+      var n = 12;
+      if (solves.length >= n) {
+        var rawData = [];
+        for (var i = 0; i <= solves.length - n; i++) {
+          var slice = solves.slice(i, i + n);
+          var avg = averageOfSlice(slice);
+          if (avg !== 'DNF' && isFinite(avg)) {
+            rawData.push({ val: avg, raw: slice, date: slice[0].timestamp });
+          }
+        }
+        rawData.sort(function (a, b) { return a.val - b.val; });
+        statsDetailData = rawData;
+      }
+    }
+
+    statsDetailTitle.textContent = title;
+
+    if (statsDetailData.length === 0) {
+      statsDetailList.innerHTML = '<li class="empty">暂无足够数据</li>';
+    } else {
+      var html = '';
+      for (var i = 0; i < statsDetailData.length; i++) {
+        var item = statsDetailData[i];
+        var isDnf = item.val === Infinity;
+        var mainStr;
+        if (isDnf) {
+          var dnfSolve = solves[item.origIndex];
+          mainStr = 'DNF' + (dnfSolve ? ' <span class="raw-t">(' + fmt(dnfSolve.time) + ')</span>' : '');
+        } else if (type === 'pb' && item.penalty === 1) {
+          mainStr = fmt(item.val) + '<span class="penalty-plus">+</span>';
+        } else {
+          mainStr = fmt(item.val);
+        }
+        
+        var dt = formatDate(item.date).split(' ');
+        var datePart = dt[0];
+        var timePart = dt[1];
+        
+        var rankHtml = '<span class="rank-text">#' + (i + 1) + '</span>';
+        if (!isDnf && i === 0) rankHtml = '<span class="medal gold">1</span>';
+        else if (!isDnf && i === 1) rankHtml = '<span class="medal silver">2</span>';
+        else if (!isDnf && i === 2) rankHtml = '<span class="medal bronze">3</span>';
+        
+        // 如果是 PB 面板，添加操作按钮
+        var actionHtml = '';
+        if (type === 'pb') {
+           actionHtml = '<div class="stats-actions">' +
+                          '<button class="act-btn p2' + (item.penalty === 1 ? ' active' : '') + '" data-orig="' + item.origIndex + '" data-act="p2">+2</button>' +
+                          '<button class="act-btn dnf' + (item.penalty === 2 ? ' active' : '') + '" data-orig="' + item.origIndex + '" data-act="dnf">DNF</button>' +
+                          '<button class="act-btn del" data-orig="' + item.origIndex + '" data-act="del">×</button>' +
+                        '</div>';
+        }
+        
+        html += '<li class="stats-detail-item' + (isDnf ? ' dnf' : '') + '" data-type="' + type + '" data-idx="' + i + '">' +
+                  '<div class="rank-badge">' + rankHtml + '</div>' +
+                  '<span class="main-val">' + mainStr + '</span>' +
+                  actionHtml +
+                  '<div class="date-val"><span>' + datePart + '</span><span class="t-time">' + timePart + '</span></div>' +
+                '</li>';
+      }
+      statsDetailList.innerHTML = html;
+    }
+
+    statsDetailOverlay.classList.add('show');
+    if (!wasOpen) pushHistory('stats');
+    blurActive();
+  }
+
+  function closeStatsDetail() {
+    var wasOpen = statsDetailOverlay.classList.contains('show');
+    statsDetailOverlay.classList.remove('show');
+    if (wasOpen) releaseHistory();
+    blurActive();
+  }
+
+  // 修改 +2 / DNF 后，把列表滚动到该成绩的新位置并短暂高亮
+  function scrollToStatsSolve(origIndex) {
+    for (var i = 0; i < statsDetailData.length; i++) {
+      if (statsDetailData[i].origIndex !== origIndex) continue;
+      var li = statsDetailList.querySelector('.stats-detail-item[data-idx="' + i + '"]');
+      if (!li) return;
+      try {
+        li.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      } catch (e) {
+        li.scrollIntoView();
+      }
+      li.classList.add('flash');
+      setTimeout(function () { li.classList.remove('flash'); }, 1000);
+      return;
+    }
+  }
+
+  /* ================= 删除逻辑 ================= */
+  function requestDeleteSolve(index) {
+    if (isTouchPrimary) {
+      openDeleteConfirm(index);
+    } else {
+      deleteSolveDirect(index);
+    }
+  }
+
+  function deleteSolveDirect(index) {
+    if (state !== 'idle') { showToast('请先停止计时'); return; }
+    if (index === undefined || index === null || isNaN(index) || !solves[index]) return;
+
+    solves.splice(index, 1);
+    save();
+    render();
+
+    if (statsDetailOverlay.classList.contains('show')) {
+      showStatsDetail(currentStatsType);
+    }
+
+    vibrate(10);
+    showToast('已删除该条成绩');
+  }
+
+  function openDeleteConfirm(index) {
+    if (confirmOpen) return;
+    if (!solves.length) { showToast('暂无成绩可删除'); return; }
+    if (typeof index !== 'number' || isNaN(index) || !solves[index]) index = 0;
+    if (state !== 'idle') { showToast('请先停止计时'); return; }
+
+    var s = solves[index];
+    confirmDesc.innerHTML =
+      '将删除成绩：<strong>' +
+      (s.penalty === 2 ? 'DNF (' + fmt(s.time) + ')' : fmtSolve(s)) +
+      '</strong>，此操作不可恢复。';
+    
+    pendingDeleteIndex = index;
+    confirmOpen = true;
+    confirmOverlay.classList.add('show');
+    pushHistory('confirm');
+  }
+
+  function closeDeleteConfirm() {
+    var wasOpen = confirmOpen;
+    confirmOpen = false;
+    confirmOverlay.classList.remove('show');
+    if (wasOpen) releaseHistory();
+    blurActive();
+  }
+
+  function doDeleteSpecific() {
+    if (!confirmOpen) return;
+    
+    var idx = pendingDeleteIndex;
+    closeDeleteConfirm();
+    pendingDeleteIndex = null;
+    
+    if (idx === null || !solves[idx]) return;
+
+    var resetPostBar = postActionsShown && idx === 0;
+    solves.splice(idx, 1);
+    if (resetPostBar) {
+      hidePostSolveActions();
+      setTimerDisplay('0.00');
+      setIdleHint();
+    }
+    save();
+    render();
+
+    // 同步刷新统计面板
+    if (statsDetailOverlay.classList.contains('show')) {
+      showStatsDetail(currentStatsType);
+    }
+
+    vibrate(10);
+    showToast('已删除该条成绩');
+  }
+
+  /* ================= 清空 ================= */
+  function clearAll() {
+    if (!solves.length && state === 'idle') { showToast('暂无成绩'); return; }
+    if (!confirm('确定要清空全部成绩吗？此操作不可恢复。')) return;
+    hidePostSolveActions();
+
+    // 直接终止当前操作，不调用 stopTimer()，避免清空时把当前计时保存成新成绩。
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = 0;
+    stopObserve();
+    cancelSpeech();
+    releaseHistory();
+    clearHoldUI();
+    obsActive = false;
+    state = 'idle';
+    pendingPen = 0;
+    holdTarget = null;
+
+    document.body.classList.remove('hide-all');
+    solves.length = 0;   // 只清空当前分组，保持数组引用
+    save();
+    render();
+    setTimerDisplay('0.00');
+    timerEl.classList.remove('warn');
+    hintEl.style.color = '';
+    setIdleHint();
+    showToast('已清空全部成绩');
+  }
+
+  /* ================= 事件 ================= */
+
+  var SWIPE_MAX_OFFSET = 28;
+  function updateSwipeFeedback(dir, dy) {
+    var offset = Math.max(-SWIPE_MAX_OFFSET, Math.min(SWIPE_MAX_OFFSET, dy * 0.5));
+    areaEl.style.setProperty('--swipe-offset', offset + 'px');
+    areaEl.classList.add('swiping');
+    // 滑动换打乱/删除成绩时把界面元素显示出来，不再保持全屏隐藏
+    document.body.classList.remove('hide-all');
+    if (dir === 'down') {
+      hintEl.textContent = '↓ 松开删除最近一条成绩';
+      hintEl.style.color = 'var(--red)';
+    } else {
+      hintEl.textContent = '↑ 松开换一个打乱';
+      hintEl.style.color = 'var(--blue)';
+    }
+  }
+
+  function resetSwipeFeedback() {
+    areaEl.classList.remove('swiping');
+    areaEl.style.removeProperty('--swipe-offset');
+    hintEl.style.color = '';
+    if (state === 'idle') setIdleHint();
+  }
+
+  areaEl.addEventListener('pointerdown', function (e) {
+    if (e.pointerType === 'mouse') return;
+    if (!e.isPrimary || activePointerId !== null) return;
+    if (e.target.closest && (e.target.closest('.scramble-wrap') || e.target.closest('.bottom-dock') || e.target.closest('.post-solve-actions'))) return;
+    e.preventDefault();
+    activePointerId = e.pointerId;
+    try { areaEl.setPointerCapture(e.pointerId); } catch (err) {}
+    // 手机快捷手势：上划换打乱、下滑删除最近一条成绩
+    touchSwipe = (state === 'idle' && !settingsOpen && !confirmOpen)
+      ? { startX: e.clientX, startY: e.clientY, swipe: null }
+      : null;
+    press();
+  });
+
+  // 手机计时中：底部隐藏区域被轻触时也能停止计时（计时数字仍保持原位置）
+  window.addEventListener('pointerdown', function (e) {
+    if (!isTouchPrimary) return;
+    if (state !== 'running' || !document.body.classList.contains('hide-all')) return;
+    if (areaEl.contains(e.target)) return;
+    stopTimer();
+  });
+
+  window.addEventListener('pointermove', function (e) {
+    if (!touchSwipe) return;
+    if (e.pointerId !== activePointerId) return;
+    var dx = e.clientX - touchSwipe.startX;
+    var dy = e.clientY - touchSwipe.startY;
+    if (touchSwipe.swipe) {
+      updateSwipeFeedback(touchSwipe.swipe, dy);
+      return;
+    }
+    if (Math.abs(dy) < 56 || Math.abs(dy) < Math.abs(dx) * 1.3) return;
+    if (state === 'holding' || state === 'ready' || state === 'obsHold' || state === 'observing') {
+      // 保持当前沉浸布局，只清掉按住提示，让计时数字跟随手指移动
+      clearHoldUI();
+      touchSwipe.swipe = (dy < 0) ? 'up' : 'down';
+      updateSwipeFeedback(touchSwipe.swipe, dy);
+    }
+  });
+
+  window.addEventListener('pointerup', function (e) {
+    if (activePointerId === null || e.pointerId !== activePointerId) return;
+    activePointerId = null;
+    var swipe = touchSwipe ? touchSwipe.swipe : null;
+    touchSwipe = null;
+    if (swipe) {
+      cancelActivePress();
+      resetSwipeFeedback();
+    } else {
+      release();
+    }
+    if (swipe === 'up') {
+      newScramble();
+    } else if (swipe === 'down') {
+      openDeleteConfirm(0);
+    }
+  });
+
+  window.addEventListener('pointercancel', function (e) {
+    if (activePointerId !== null && e.pointerId !== activePointerId) return;
+    activePointerId = null;
+    var hadSwipe = !!(touchSwipe && touchSwipe.swipe);
+    touchSwipe = null;
+    if (hadSwipe) {
+      cancelActivePress();
+      resetSwipeFeedback();
+    } else {
+      cancelHold();
+    }
+  });
+  // 按住空格/触摸期间窗口失焦会丢失 keyup/pointerup，这里兜底复位，避免卡在准备状态
+  window.addEventListener('blur', function () {
+    activePointerId = null;
+    var hadSwipe = !!(touchSwipe && touchSwipe.swipe);
+    touchSwipe = null;
+    if (hadSwipe) {
+      cancelActivePress();
+      resetSwipeFeedback();
+    } else {
+      cancelHold();
+    }
+  });
+
+  // 安卓返回键 / iOS 侧滑返回：只关闭当前最上层的计时阶段或弹层
+  window.addEventListener('popstate', function () {
+    if (ignorePopCount > 0) {
+      ignorePopCount--;
+      return;
+    }
+    if (!historyActions.length) return;
+    var action = historyActions.pop();
+    handlingPop = true;
+    try {
+      if (action === 'observe') {
+        cancelObserve();
+      } else if (action === 'run') {
+        cancelTiming();
+      } else if (action === 'groupname') {
+        cancelGroupNameModal();
+      } else if (action === 'settings') {
+        closeSettings();
+      } else if (action === 'more') {
+        closeMoreSheet();
+      } else if (action === 'stats') {
+        closeStatsDetail();
+      } else if (action === 'solve') {
+        closeSolveDetail();
+      } else if (action === 'groupdetail') {
+        closeGroupDetail();
+      } else if (action === 'groupmanage') {
+        closeGroupManage();
+      } else if (action === 'confirm') {
+        closeDeleteConfirm();
+      }
+    } finally {
+      handlingPop = false;
+    }
+  });
+
+  window.addEventListener('keydown', function (e) {
+    // 页面层拦截 Alt，尽量避免单独按 Alt 时聚焦 Chrome 工具栏的“更多选项”
+    if (e.key === 'Alt' || e.code === 'AltLeft' || e.code === 'AltRight') {
+      e.preventDefault();
+    }
+
+    var keyTag = (e.target && e.target.tagName) ? e.target.tagName : '';
+    var inField = keyTag === 'INPUT' || keyTag === 'TEXTAREA';
+    var isModifier = e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta';
+
+    // 计时中：任意键停止计时并记录成绩；Esc 则取消本次计时（不记录）
+    if (state === 'running' && !inField && !isModifier) {
+      e.preventDefault();
+      if (e.repeat) return;
+      if (e.key === 'Escape' || e.code === 'Escape') {
+        cancelTiming();
+      } else {
+        stopTimer();
+      }
+      return;
+    }
+
+    // Alt+Z 打开删除确认，Enter 确认删除
+    if (e.altKey && e.code === 'KeyZ') {
+      if (inField) return;
+      e.preventDefault();
+      if (e.repeat) return;
+      if (confirmOpen || solveDetailOverlay.classList.contains('show') ||
+          groupDetailOverlay.classList.contains('show') || statsDetailOverlay.classList.contains('show') ||
+          groupManageOverlay.classList.contains('show') || groupNameOverlay.classList.contains('show') || settingsOpen || moreOpen) return;
+      openDeleteConfirm(0);
+      return;
+    }
+
+    // Alt+ArrowRight 换打乱
+    if (e.altKey && e.key === 'ArrowRight') {
+      if (inField) return;
+      e.preventDefault();
+      if (e.repeat) return;
+      newScramble();
+      return;
+    }
+
+    if (e.key === 'Enter') {
+      if (confirmOpen) {
+        e.preventDefault();
+        doDeleteSpecific();
+        return;
+      }
+    }
+
+    if (e.key === 'Escape') {
+      if (confirmOpen) { closeDeleteConfirm(); return; }
+      if (solveDetailOverlay.classList.contains('show')) { closeSolveDetail(); return; }
+      if (groupDetailOverlay.classList.contains('show')) { closeGroupDetail(); return; }
+      if (statsDetailOverlay.classList.contains('show')) { closeStatsDetail(); return; }
+      if (groupNameOverlay.classList.contains('show')) { cancelGroupNameModal(); return; }
+      if (groupManageOverlay.classList.contains('show')) { closeGroupManage(); return; }
+      if (settingsOpen) { closeSettings(); return; }
+      if (moreOpen) { closeMoreSheet(); return; }
+      if (state === 'observing') cancelObserve();
+      return;
+    }
+
+    if (e.code === 'Space' || e.key === ' ') {
+      var t = e.target;
+      var tag = (t && t.tagName) ? t.tagName : '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (t && t.closest && t.closest('.post-solve-actions')) return;
+      e.preventDefault();
+      if (e.repeat) return;
+      if (confirmOpen || moreOpen || solveDetailOverlay.classList.contains('show') || groupDetailOverlay.classList.contains('show') || statsDetailOverlay.classList.contains('show') || groupManageOverlay.classList.contains('show') || groupNameOverlay.classList.contains('show')) return;
+      if (settingsOpen && state !== 'running') return;
+      press();
+    }
+  });
+
+  window.addEventListener('keyup', function (e) {
+    if (e.key === 'Alt' || e.code === 'AltLeft' || e.code === 'AltRight') {
+      e.preventDefault();
+    }
+    if (e.code === 'Space' || e.key === ' ') {
+      var t = e.target;
+      var tag = (t && t.tagName) ? t.tagName : '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (t && t.closest && t.closest('.post-solve-actions')) return;
+      e.preventDefault();
+      if (confirmOpen || moreOpen || solveDetailOverlay.classList.contains('show') || groupDetailOverlay.classList.contains('show') || statsDetailOverlay.classList.contains('show') || groupManageOverlay.classList.contains('show') || groupNameOverlay.classList.contains('show')) return;
+      if (settingsOpen && state !== 'running') return;
+      release();
+      document.body.classList.toggle('hide-all', (state === 'observing' || state === 'running') && hideAllElements);
+    }
+  });
+
+  scrambleEl.addEventListener('click', copyScramble);
+
+  btnScr.addEventListener('click', function () {
+    newScramble();
+    btnScr.blur();
+  });
+
+  /* 列表点击处理 */
+  listEl.addEventListener('click', function (e) {
+    if (state !== 'idle') return;
+    var btn = e.target.closest('.act-btn');
+    if (btn) {
+      var li = e.target.closest('.solve');
+      if (!li) return;
+      var i = parseInt(li.getAttribute('data-i'), 10);
+      if (isNaN(i) || !solves[i]) return;
+
+      var act = btn.getAttribute('data-act');
+      if (act === 'p2') {
+        solves[i].penalty = (solves[i].penalty === 1) ? 0 : 1;
+        save();
+        render();
+      } else if (act === 'dnf') {
+        solves[i].penalty = (solves[i].penalty === 2) ? 0 : 2;
+        save();
+        render();
+      } else if (act === 'del') {
+        requestDeleteSolve(i);
+      }
+      return;
+    }
+    
+    var li = e.target.closest('.solve');
+    if (li) {
+      var i = parseInt(li.getAttribute('data-i'), 10);
+      if (!isNaN(i) && solves[i]) {
+        openSolveDetail(i);
+      }
+    }
+  });
+
+  /* 统计详情点击（含 PB 面板内的编辑操作） */
+  statsDetailList.addEventListener('click', function (e) {
+    var btn = e.target.closest('.act-btn');
+    if (btn) {
+      var orig = parseInt(btn.getAttribute('data-orig'), 10);
+      if (isNaN(orig) || !solves[orig]) return;
+      
+      var act = btn.getAttribute('data-act');
+      if (act === 'p2') {
+        solves[orig].penalty = (solves[orig].penalty === 1) ? 0 : 1;
+        save();
+        render();
+        showStatsDetail('pb'); // 重新计算排名并刷新面板
+        scrollToStatsSolve(orig);
+      } else if (act === 'dnf') {
+        solves[orig].penalty = (solves[orig].penalty === 2) ? 0 : 2;
+        save();
+        render();
+        showStatsDetail('pb');
+        scrollToStatsSolve(orig);
+      } else if (act === 'del') {
+        requestDeleteSolve(orig);
+      }
+      return;
+    }
+
+    // 点击列表项打开详情
+    var li = e.target.closest('.stats-detail-item');
+    if (!li) return;
+    
+    var type = li.getAttribute('data-type');
+    var idx = parseInt(li.getAttribute('data-idx'), 10);
+    if (isNaN(idx) || !statsDetailData[idx]) return;
+    
+    if (type === 'pb') {
+      openSolveDetail(statsDetailData[idx].origIndex);
+    } else {
+      openGroupDetail(statsDetailData[idx].raw, type === 'ao5' ? 'ao5 统计详情' : 'ao12 统计详情');
+    }
+  });
+
+  /* 详情复制 */
+  btnCopySolveDetail.addEventListener('click', function () {
+    copyToClipboard(copySolveText, '详情已复制');
+  });
+  btnCopyGroupDetail.addEventListener('click', function () {
+    copyToClipboard(copyGroupText, '全部信息已复制');
+  });
+
+  btnCloseSolveDetail.addEventListener('click', closeSolveDetail);
+  solveDetailOverlay.addEventListener('click', function (e) {
+    if (e.target === solveDetailOverlay) closeSolveDetail();
+  });
+
+  btnCloseGroupDetail.addEventListener('click', closeGroupDetail);
+  groupDetailOverlay.addEventListener('click', function (e) {
+    if (e.target === groupDetailOverlay) closeGroupDetail();
+  });
+
+  btnSettings.addEventListener('click', function () {
+    openSettings();
+    btnSettings.blur();
+  });
+
+  btnCloseSet.addEventListener('click', function () {
+    closeSettings();
+    btnCloseSet.blur();
+  });
+
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay) closeSettings();
+  });
+
+  tabBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      switchTab(btn.getAttribute('data-tab'));
+      btn.blur();
+    });
+  });
+
+  /* 设置项事件绑定 */
+  hideAllToggle.addEventListener('change', function () {
+    hideAllElements = hideAllToggle.checked;
+    save();
+    hideAllToggle.blur();
+  });
+
+  obsToggle.addEventListener('change', function () {
+    obsEnabled = obsToggle.checked;
+    save();
+    if (state === 'observing' && !obsEnabled) cancelObserve();
+    else if (state === 'idle') setIdleHint();
+    obsToggle.blur();
+  });
+
+  voiceToggle.addEventListener('change', function () {
+    voiceEnabled = voiceToggle.checked;
+    save();
+    volRange.disabled = !voiceEnabled;
+    if (voiceEnabled) {
+      primeSpeech();
+      speak('八秒');
+    } else {
+      cancelSpeech();
+    }
+    voiceToggle.blur();
+  });
+
+  hideTimeToggle.addEventListener('change', function () {
+    hideTime = hideTimeToggle.checked;
+    save();
+    hideTimeToggle.blur();
+  });
+
+  volRange.addEventListener('input', function () {
+    voiceVolume = parseInt(volRange.value, 10);
+    if (isNaN(voiceVolume)) voiceVolume = 80;
+    if (voiceVolume < 1) voiceVolume = 1;
+    if (voiceVolume > 100) voiceVolume = 100;
+    volVal.textContent = String(voiceVolume);
+    save();
+  });
+
+  btnResetVol.addEventListener('click', function() {
+    voiceVolume = 80;
+    volRange.value = '80';
+    volVal.textContent = '80';
+    save();
+    showToast('音量已恢复默认');
+    btnResetVol.blur();
+  });
+
+  scrambleSizeRange.addEventListener('input', function () {
+    scrambleSize = parseInt(scrambleSizeRange.value, 10);
+    scrambleSizeVal.textContent = String(scrambleSize);
+    applySizes();
+    save();
+  });
+
+  btnResetScrambleSize.addEventListener('click', function() {
+    scrambleSize = 50;
+    scrambleSizeRange.value = '50';
+    scrambleSizeVal.textContent = '50';
+    applySizes();
+    save();
+    showToast('打乱字体大小已恢复默认');
+    btnResetScrambleSize.blur();
+  });
+
+  segFont.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('.seg-btn') : null;
+    if (!b) return;
+    var f = b.getAttribute('data-font');
+    if (['mono', 'sans', 'serif', 'rounded'].indexOf(f) < 0) return;
+    fontStyle = f;
+    applyFont();
+    updateFontButtons();
+    save();
+    b.blur();
+  });
+
+  themePicker.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('.theme-btn') : null;
+    if (!b) return;
+    var t = b.getAttribute('data-theme');
+    if (t !== 'dark' && t !== 'light') return;
+    theme = t;
+    applyTheme();
+    updateThemeButtons();
+    save();
+    b.blur();
+  });
+
+  btnClear.addEventListener('click', function () {
+    clearAll();
+    btnClear.blur();
+  });
+
+  /* 分组管理 */
+  btnGroups.addEventListener('click', function () {
+    openGroupManage();
+    btnGroups.blur();
+  });
+
+  /* 更多抽屉 */
+  btnMore.addEventListener('click', function () {
+    openMoreSheet();
+    btnMore.blur();
+  });
+
+  btnMoreClose.addEventListener('click', closeMoreSheet);
+
+  moreSheetOverlay.addEventListener('click', function (e) {
+    if (e.target === moreSheetOverlay) closeMoreSheet();
+  });
+
+  btnMoreGroups.addEventListener('click', function () {
+    openGroupManage();
+    btnMoreGroups.blur();
+  });
+
+  btnMorePuzzle.addEventListener('click', function () {
+    showToast('目前仅支持3×3');
+    btnMorePuzzle.blur();
+  });
+
+  /* 计时结束后的快捷成绩编辑 */
+  postActP2.addEventListener('click', function () {
+    var s = solves[0];
+    if (!s) return;
+    s.penalty = (s.penalty === 1) ? 0 : 1;
+    save();
+    render();
+    setTimerDisplay(fmtSolve(s));
+    updatePostSolveActionsState();
+    vibrate(10);
+    this.blur();
+  });
+
+  postActDnf.addEventListener('click', function () {
+    var s = solves[0];
+    if (!s) return;
+    s.penalty = (s.penalty === 2) ? 0 : 2;
+    save();
+    render();
+    setTimerDisplay(fmtSolve(s));
+    updatePostSolveActionsState();
+    vibrate(10);
+    this.blur();
+  });
+
+  postActDel.addEventListener('click', function () {
+    if (!solves.length) return;
+    openDeleteConfirm(0);
+    this.blur();
+  });
+
+  postActP2.addEventListener('dblclick', function (e) { e.preventDefault(); });
+  postActDnf.addEventListener('dblclick', function (e) { e.preventDefault(); });
+
+  btnCloseGroupManage.addEventListener('click', function () {
+    closeGroupManage();
+    btnCloseGroupManage.blur();
+  });
+
+  groupManageOverlay.addEventListener('click', function (e) {
+    if (e.target === groupManageOverlay) closeGroupManage();
+  });
+
+  btnNewGroup.addEventListener('click', createGroup);
+  btnClearGroup.addEventListener('click', clearCurrentGroupSolves);
+
+  btnGroupNameModalOk.addEventListener('click', submitGroupNameModal);
+  btnGroupNameModalCancel.addEventListener('click', cancelGroupNameModal);
+  groupNameOverlay.addEventListener('click', function (e) {
+    if (e.target === groupNameOverlay) cancelGroupNameModal();
+  });
+  groupNameModalInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      submitGroupNameModal();
+    }
+  });
+
+  groupManageList.addEventListener('click', function (e) {
+    if (groupDragMoved) {
+      groupDragMoved = false;
+      clearTimeout(groupDragResetTimer);
+      return;
+    }
+    if (e.target.closest('.gm-drag')) return;
+
+    var delBtn = e.target.closest('[data-del]');
+    if (delBtn) { deleteGroup(delBtn.getAttribute('data-del')); return; }
+
+    var renameBtn = e.target.closest('[data-rename]');
+    if (renameBtn) { startGroupRename(renameBtn.getAttribute('data-rename')); return; }
+
+    var confirmBtn = e.target.closest('[data-confirm]');
+    if (confirmBtn) {
+      var cLi = confirmBtn.closest('.group-manage-item');
+      var cInput = cLi ? cLi.querySelector('.gm-name-input') : null;
+      confirmGroupRename(confirmBtn.getAttribute('data-confirm'), cInput);
+      return;
+    }
+
+    var cancelBtn = e.target.closest('[data-cancel]');
+    if (cancelBtn) {
+      renamingGroupId = null;
+      renderGroupManage();
+      return;
+    }
+
+    if (renamingGroupId) return;
+    var li = e.target.closest('.group-manage-item');
+    if (!li) return;
+    selectGroup(li.getAttribute('data-gid'));
+  });
+
+  groupManageList.addEventListener('keydown', function (e) {
+    var input = e.target.closest ? e.target.closest('.gm-name-input') : null;
+    if (!input) return;
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      var li = input.closest('.group-manage-item');
+      if (!li) return;
+      confirmGroupRename(li.getAttribute('data-gid'), input);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      renamingGroupId = null;
+      renderGroupManage();
+    }
+  });
+
+  /* 拖动排序：鼠标按住直接拖，触屏按住左侧手柄约 0.4 秒后拖动 */
+  groupManageList.addEventListener('pointerdown', function (e) {
+    if (renamingGroupId) return;
+    if (e.target.closest('button, input')) return;
+    if (e.button && e.button !== 0) return;
+    var isTouch = e.pointerType === 'touch' || e.pointerType === 'pen';
+    // 手机上只允许从拖动手柄开始排序，避免轻触列表时误触排序或打断滚动
+    if (isTouch && !e.target.closest('.gm-drag')) return;
+    var li = e.target.closest('.group-manage-item');
+    if (!li) return;
+    if (isTouch) e.preventDefault();
+    groupPress = {
+      li: li,
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      type: e.pointerType,
+      active: false,
+      reordered: false,
+      timer: 0
+    };
+    if (isTouch) {
+      groupPress.timer = setTimeout(activateGroupPress, 380);
+    }
+  });
+
+  groupManageList.addEventListener('pointermove', function (e) {
+    if (!groupPress) return;
+    var dx = e.clientX - groupPress.startX;
+    var dy = e.clientY - groupPress.startY;
+    if (!groupPress.active) {
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      if (groupPress.type === 'mouse') {
+        if (dist > 4) {
+          activateGroupPress();
+          reorderGroupByPointer(e.clientY);
+        }
+      } else if (dist > 8) {
+        // 触屏先移动说明是在滚动列表，取消长按
+        clearTimeout(groupPress.timer);
+        groupPress = null;
+      }
+      return;
+    }
+    e.preventDefault();
+    reorderGroupByPointer(e.clientY);
+  });
+
+  groupManageList.addEventListener('pointerup', endGroupPress);
+  groupManageList.addEventListener('pointercancel', endGroupPress);
+
+  // 长按拖动时阻止列表滚动
+  groupManageList.addEventListener('touchmove', function (e) {
+    if (groupPress && groupPress.active) e.preventDefault();
+  }, { passive: false });
+
+  // 长按不要弹出系统菜单
+  groupManageList.addEventListener('contextmenu', function (e) {
+    if (groupPress) e.preventDefault();
+  });
+
+  /* 魔方类型（目前仅支持三阶） */
+  btnPuzzle.addEventListener('click', function () {
+    showToast('目前仅支持3×3');
+    btnPuzzle.blur();
+  });
+
+  btnConfirmDel.addEventListener('click', function () {
+    doDeleteSpecific();
+    btnConfirmDel.blur();
+  });
+
+  btnConfirmCancel.addEventListener('click', function () {
+    closeDeleteConfirm();
+    btnConfirmCancel.blur();
+  });
+
+  confirmOverlay.addEventListener('click', function (e) {
+    if (e.target === confirmOverlay) closeDeleteConfirm();
+  });
+
+  /* 统计排行点击 */
+  statPb.addEventListener('click', function () { showStatsDetail('pb'); });
+  statAo5.addEventListener('click', function () { showStatsDetail('ao5'); });
+  statAo12.addEventListener('click', function () { showStatsDetail('ao12'); });
+  btnCloseStatsDetail.addEventListener('click', function () { closeStatsDetail(); });
+  statsDetailOverlay.addEventListener('click', function (e) {
+    if (e.target === statsDetailOverlay) closeStatsDetail();
+  });
+
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) return;
+    if (state === 'observing') cancelObserve();
+    else if (state === 'obsHold' || state === 'holding' || state === 'ready') cancelHold();
+  });
+
+  var sizeRaf = 0;
+  function scheduleApplySizes() {
+    if (sizeRaf) cancelAnimationFrame(sizeRaf);
+    sizeRaf = requestAnimationFrame(function () {
+      sizeRaf = 0;
+      applySizes();
+    });
+  }
+
+  window.addEventListener('resize', scheduleApplySizes);
+  window.addEventListener('orientationchange', function () {
+    setTimeout(applySizes, 120);
+  });
+
+  /* ================= 初始化 ================= */
+  load();
+  applyTheme();
+  applyFont();
+  hideAllToggle.checked = hideAllElements;
+  obsToggle.checked = obsEnabled;
+  hideTimeToggle.checked = hideTime;
+  voiceToggle.checked = voiceEnabled;
+  volRange.value = String(voiceVolume);
+  volVal.textContent = String(voiceVolume);
+  volRange.disabled = !voiceEnabled;
+
+  scrambleSizeRange.value = String(scrambleSize);
+  scrambleSizeVal.textContent = String(scrambleSize);
+  applySizes();
+
+  updateThemeButtons();
+  updateFontButtons();
+  refreshGroupUI();
+  newScramble();
+  setTimerDisplay('0.00');
+  setIdleHint();
+  render();
+})();
+</script>
+</body>
+</html>
